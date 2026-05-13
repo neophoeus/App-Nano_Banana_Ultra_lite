@@ -6,7 +6,6 @@ logs/
 node_modules/
 dist/
 dist-ssr/
-output/
 coverage/
 playwright-report/
 test-results/
@@ -17,6 +16,7 @@ dev-environment/
 tests/
 e2e/
 scripts/
+package-lock.json
 vitest.config.ts
 .prettierignore
 prettier.config.mjs
