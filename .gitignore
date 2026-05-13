@@ -1,31 +1,23 @@
 # Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-# Generated dependencies and runtime/build artifacts
+# Dependencies and generated artifacts
 node_modules/
 dist/
 dist-ssr/
 output/
-test-results/
-playwright-report/
 coverage/
+playwright-report/
+test-results/
 
-# Local-only development and test surface excluded from the AI Studio repo
+# Local development and test-only files
 .vscode/
 dev-environment/
 tests/
 e2e/
 scripts/
 vitest.config.ts
-test_results.txt
-CHANGELOG.md
-.env.example
 .prettierignore
 prettier.config.mjs
 
