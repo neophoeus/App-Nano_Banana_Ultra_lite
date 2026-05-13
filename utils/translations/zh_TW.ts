@@ -1,5 +1,5 @@
 export const zh_TW = {
-    appTitle: 'Nano Banana Ultra Lite',
+    appTitle: 'Nano Banana Ultra lite',
     clearAll: '全部清空',
     toolPen: '畫筆',
     toolEraser: '橡皮擦',

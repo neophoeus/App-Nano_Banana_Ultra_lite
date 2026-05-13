@@ -1,5 +1,5 @@
 export const en = {
-    appTitle: 'Nano Banana Ultra Lite',
+    appTitle: 'Nano Banana Ultra lite',
     clearAll: 'Clear All',
     toolPen: 'Pen',
     toolEraser: 'Eraser',

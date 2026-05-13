@@ -1,5 +1,5 @@
 export const ru = {
-    appTitle: 'Nano Banana Ultra Lite',
+    appTitle: 'Nano Banana Ultra lite',
     clearAll: 'Очистить всё',
     toolPen: 'Ручка',
     toolEraser: 'Ластик',

@@ -1,5 +1,5 @@
 export const ja = {
-    appTitle: 'Nano Banana Ultra Lite',
+    appTitle: 'Nano Banana Ultra lite',
     clearAll: 'すべてクリア',
     toolPen: 'ペン',
     toolEraser: '消しゴム',

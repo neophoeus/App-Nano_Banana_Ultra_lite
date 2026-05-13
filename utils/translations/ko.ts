@@ -1,5 +1,5 @@
 export const ko = {
-    appTitle: 'Nano Banana Ultra Lite',
+    appTitle: 'Nano Banana Ultra lite',
     clearAll: '모두 지우기',
     toolPen: '펜',
     toolEraser: '지우개',

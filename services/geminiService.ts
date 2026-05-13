@@ -162,7 +162,7 @@ type PreparedBrowserGenerateRequest = {
     ai: GoogleGenAI;
 };
 
-type LiteTestGenerateImageContext = {
+type BrowserOnlyTestGenerateImageContext = {
     batchSize: number;
     onImageReceived?:
         | ((
@@ -177,23 +177,23 @@ type LiteTestGenerateImageContext = {
     onLiveProgressEvent?: ((event: GenerationLiveProgressEvent) => void) | undefined;
 };
 
-type LiteTestGeminiServiceOverrides = {
+type BrowserOnlyTestGeminiServiceOverrides = {
     enhancePromptWithGemini?: (currentPrompt: string, lang: Language) => Promise<string> | string;
     generateRandomPrompt?: (lang: Language) => Promise<string> | string;
     generatePromptFromImage?: (imageDataUrl: string, lang: Language) => Promise<string> | string;
     generateImageWithGemini?: (
         options: GenerateOptions,
-        context: LiteTestGenerateImageContext,
+        context: BrowserOnlyTestGenerateImageContext,
     ) => Promise<GenerationResult[]> | GenerationResult[];
 };
 
-const getLiteTestGeminiServiceOverrides = (): LiteTestGeminiServiceOverrides | null => {
+const getBrowserOnlyTestGeminiServiceOverrides = (): BrowserOnlyTestGeminiServiceOverrides | null => {
     if (typeof window === 'undefined') {
         return null;
     }
 
     const globalWindow = window as typeof window & {
-        __NBU_LITE_TEST_SERVICE_OVERRIDES__?: LiteTestGeminiServiceOverrides;
+        __NBU_LITE_TEST_SERVICE_OVERRIDES__?: BrowserOnlyTestGeminiServiceOverrides;
     };
 
     return globalWindow.__NBU_LITE_TEST_SERVICE_OVERRIDES__ || null;
@@ -1152,7 +1152,7 @@ export const promptForApiKey = async (): Promise<void> => {
 // --- Text Utilities (Prompt Engineering) ---
 
 export const enhancePromptWithGemini = async (currentPrompt: string, lang: Language): Promise<string> => {
-    const testOverride = getLiteTestGeminiServiceOverrides()?.enhancePromptWithGemini;
+    const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.enhancePromptWithGemini;
     if (testOverride) {
         return await testOverride(currentPrompt, lang);
     }
@@ -1179,7 +1179,7 @@ export const enhancePromptWithGemini = async (currentPrompt: string, lang: Langu
 };
 
 export const generateRandomPrompt = async (lang: Language): Promise<string> => {
-    const testOverride = getLiteTestGeminiServiceOverrides()?.generateRandomPrompt;
+    const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateRandomPrompt;
     if (testOverride) {
         return await testOverride(lang);
     }
@@ -1204,7 +1204,7 @@ export const generateRandomPrompt = async (lang: Language): Promise<string> => {
 };
 
 export const generatePromptFromImage = async (imageDataUrl: string, lang: Language): Promise<string> => {
-    const testOverride = getLiteTestGeminiServiceOverrides()?.generatePromptFromImage;
+    const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generatePromptFromImage;
     if (testOverride) {
         return await testOverride(imageDataUrl, lang);
     }
@@ -1399,7 +1399,7 @@ export const generateImageWithGemini = async (
     onResult?: (result: GenerationResult) => void,
     onLiveProgressEvent?: (event: GenerationLiveProgressEvent) => void,
 ): Promise<GenerationResult[]> => {
-    const testOverride = getLiteTestGeminiServiceOverrides()?.generateImageWithGemini;
+    const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateImageWithGemini;
     if (testOverride) {
         return await testOverride(options, {
             batchSize,

@@ -1,5 +1,5 @@
 export const es = {
-    appTitle: 'Nano Banana Ultra Lite',
+    appTitle: 'Nano Banana Ultra lite',
     clearAll: 'Borrar todo',
     toolPen: 'Bolígrafo',
     toolEraser: 'Borrador',
