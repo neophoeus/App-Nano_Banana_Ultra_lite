@@ -1,0 +1,629 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html.nbu-theme-switching *,
+html.nbu-theme-switching *::before,
+html.nbu-theme-switching *::after {
+    transition: none !important;
+    animation: none !important;
+}
+
+@layer components {
+    .nbu-shell-panel {
+        @apply rounded-[30px] shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        background-color: rgba(255, 255, 255, 0.82);
+    }
+
+    .dark .nbu-shell-panel {
+        @apply shadow-[0_24px_90px_rgba(0,0,0,0.42)];
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(12, 16, 22, 0.88);
+    }
+
+    .nbu-subpanel {
+        @apply rounded-[24px] shadow-[0_12px_40px_rgba(15,23,42,0.06)];
+        border: 1px solid rgba(226, 232, 240, 0.75);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92));
+    }
+
+    .dark .nbu-subpanel {
+        @apply shadow-[0_18px_48px_rgba(0,0,0,0.30)];
+        border-color: rgba(255, 255, 255, 0.1);
+        background: linear-gradient(180deg, rgba(17, 22, 31, 0.92), rgba(10, 13, 18, 0.92));
+    }
+
+    .nbu-soft-well {
+        @apply rounded-[22px];
+        border: 1px solid rgba(226, 232, 240, 0.7);
+        background-color: rgba(248, 250, 252, 0.92);
+    }
+
+    .dark .nbu-soft-well {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(11, 16, 23, 0.88);
+    }
+
+    .nbu-section-eyebrow {
+        @apply text-[11px] font-black uppercase tracking-[0.20em] text-slate-400;
+        @apply dark:text-slate-500;
+    }
+
+    .nbu-status-pill {
+        @apply rounded-full px-3 py-1 text-[11px] font-semibold text-amber-800;
+        border: 1px solid rgba(253, 230, 138, 0.8);
+        background-color: rgba(255, 251, 235, 0.9);
+    }
+
+    .dark .nbu-status-pill {
+        border-color: rgba(251, 191, 36, 0.2);
+        background-color: rgba(245, 158, 11, 0.1);
+        color: rgb(253, 230, 138);
+    }
+
+    .nbu-chip {
+        @apply rounded-full px-3 py-1.5 text-[11px] font-semibold text-slate-700 shadow-sm;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        background-color: rgba(255, 255, 255, 0.92);
+    }
+
+    .dark .nbu-chip {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgb(20, 25, 34);
+        color: rgb(226, 232, 240);
+    }
+
+    .nbu-inline-panel {
+        @apply rounded-2xl border px-3 py-2;
+        border-color: rgba(226, 232, 240, 0.78);
+        background-color: rgba(255, 255, 255, 0.82);
+    }
+
+    .dark .nbu-inline-panel {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(17, 22, 31, 0.78);
+    }
+
+    .nbu-overlay-shell {
+        @apply rounded-lg border shadow-xl backdrop-blur-xl;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+    }
+
+    .dark .nbu-overlay-shell {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(11, 16, 23, 0.82);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+    }
+
+    .nbu-floating-panel {
+        @apply rounded-[28px] border shadow-2xl backdrop-blur-xl;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(255, 253, 248, 0.96);
+        box-shadow: 0 28px 90px rgba(15, 23, 42, 0.18);
+    }
+
+    .dark .nbu-floating-panel {
+        border-color: rgba(255, 255, 255, 0.08);
+        background-color: rgba(10, 13, 20, 0.96);
+        box-shadow: 0 28px 90px rgba(0, 0, 0, 0.44);
+    }
+
+    .nbu-dashed-panel {
+        @apply rounded-2xl border border-dashed;
+        border-color: rgba(203, 213, 225, 0.92);
+        background-color: rgba(248, 250, 252, 0.94);
+    }
+
+    .dark .nbu-dashed-panel {
+        border-color: rgba(255, 255, 255, 0.12);
+        background-color: rgba(10, 12, 16, 0.9);
+    }
+
+    .nbu-quiet-pill {
+        @apply rounded-full px-2.5 py-1 text-[11px] font-semibold;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        background-color: rgba(255, 255, 255, 0.92);
+        color: rgb(71, 85, 105);
+    }
+
+    .dark .nbu-quiet-pill {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(17, 22, 31, 0.92);
+        color: rgb(203, 213, 225);
+    }
+
+    .nbu-toolbar-shell {
+        @apply rounded-2xl border shadow-xl backdrop-blur-xl;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+    }
+
+    .dark .nbu-toolbar-shell {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(17, 22, 31, 0.9);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+    }
+
+    .nbu-toolbar-segment {
+        @apply rounded-xl border;
+        border-color: rgba(226, 232, 240, 0.85);
+        background-color: rgba(241, 245, 249, 0.92);
+    }
+
+    .dark .nbu-toolbar-segment {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(20, 25, 34, 0.92);
+    }
+
+    .nbu-modal-shell {
+        @apply rounded-2xl border shadow-2xl;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
+    }
+
+    .dark .nbu-modal-shell {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(22, 27, 34, 0.96);
+        box-shadow: 0 24px 72px rgba(0, 0, 0, 0.42);
+    }
+
+    .nbu-control-button,
+    .nbu-control-button-surface {
+        @apply border font-semibold transition-colors shadow-sm backdrop-blur;
+        border-color: rgba(226, 232, 240, 0.85);
+        background-color: rgba(255, 255, 255, 0.92);
+        color: rgb(51, 65, 85);
+    }
+
+    .nbu-control-button {
+        @apply rounded-full;
+    }
+
+    .nbu-control-button:hover,
+    .nbu-control-button-surface:hover {
+        border-color: rgba(251, 191, 36, 0.55);
+        color: rgb(180, 83, 9);
+    }
+
+    .dark .nbu-control-button,
+    .dark .nbu-control-button-surface {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(20, 25, 34, 0.94);
+        color: rgb(226, 232, 240);
+    }
+
+    .dark .nbu-control-button:hover,
+    .dark .nbu-control-button-surface:hover {
+        border-color: rgba(251, 191, 36, 0.4);
+        color: rgb(253, 230, 138);
+    }
+
+    .nbu-input-surface {
+        @apply rounded-2xl border transition-colors;
+        border-color: rgba(226, 232, 240, 0.85);
+        background-color: rgba(255, 255, 255, 0.96);
+        color: rgb(15, 23, 42);
+    }
+
+    .dark .nbu-input-surface {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(11, 15, 21, 0.96);
+        color: rgb(241, 245, 249);
+    }
+
+    .nbu-segmented-tray {
+        @apply rounded-xl border;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(241, 245, 249, 0.94);
+    }
+
+    .dark .nbu-segmented-tray {
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(15, 20, 28, 0.92);
+    }
+
+    .nbu-stage-surface {
+        @apply rounded-2xl overflow-hidden border transition-colors duration-500;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(248, 250, 252, 0.94);
+    }
+
+    .dark .nbu-stage-surface {
+        border-color: rgba(255, 255, 255, 0.08);
+        background-color: rgba(5, 8, 12, 0.94);
+    }
+
+    .nbu-empty-state-panel {
+        @apply rounded-2xl border px-8 py-8 transition-colors;
+        border-color: rgba(226, 232, 240, 0.82);
+        background-color: rgba(248, 250, 252, 0.95);
+    }
+
+    .dark .nbu-empty-state-panel {
+        border-color: rgba(255, 255, 255, 0.08);
+        background-color: rgba(8, 12, 18, 0.94);
+    }
+
+    .nbu-shell-surface-output-strip {
+        border-color: rgba(203, 213, 225, 0.72);
+        background: linear-gradient(180deg, rgba(252, 253, 255, 0.97), rgba(242, 247, 252, 0.92));
+        box-shadow: 0 22px 72px rgba(15, 23, 42, 0.08);
+    }
+
+    .dark .nbu-shell-surface-output-strip {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(15, 19, 26, 0.96), rgba(9, 13, 19, 0.92));
+        box-shadow: 0 22px 80px rgba(0, 0, 0, 0.38);
+    }
+
+    .nbu-shell-surface-output-strip .nbu-soft-well,
+    .nbu-shell-surface-output-strip .nbu-inline-panel {
+        border-color: rgba(203, 213, 225, 0.72);
+        background-color: rgba(255, 255, 255, 0.72);
+    }
+
+    .dark .nbu-shell-surface-output-strip .nbu-soft-well,
+    .dark .nbu-shell-surface-output-strip .nbu-inline-panel {
+        border-color: rgba(148, 163, 184, 0.12);
+        background-color: rgba(17, 22, 30, 0.82);
+    }
+
+    .nbu-shell-surface-stage-hero {
+        border-color: rgba(191, 219, 254, 0.34);
+        background: linear-gradient(180deg, rgba(247, 250, 252, 0.98), rgba(233, 240, 247, 0.94));
+        box-shadow: 0 24px 78px rgba(15, 23, 42, 0.09);
+    }
+
+    .dark .nbu-shell-surface-stage-hero {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(11, 15, 21, 0.97), rgba(6, 9, 13, 0.94));
+        box-shadow: 0 26px 84px rgba(0, 0, 0, 0.44);
+    }
+
+    .nbu-shell-surface-stage-hero .nbu-stage-surface {
+        border-color: rgba(191, 219, 254, 0.4);
+        background: linear-gradient(180deg, rgba(252, 253, 255, 0.96), rgba(236, 243, 250, 0.94));
+    }
+
+    .dark .nbu-shell-surface-stage-hero .nbu-stage-surface {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(10, 13, 19, 0.96), rgba(4, 7, 11, 0.94));
+    }
+
+    .nbu-stage-hero-filmstrip-shell {
+        border-color: rgba(191, 219, 254, 0.34);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(241, 245, 249, 0.66));
+    }
+
+    .dark .nbu-stage-hero-filmstrip-shell {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(15, 19, 26, 0.84), rgba(10, 13, 18, 0.78));
+    }
+
+    .nbu-stage-hero-filmstrip-disclosure {
+        border-color: rgba(203, 213, 225, 0.7);
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .dark .nbu-stage-hero-filmstrip-disclosure {
+        border-color: rgba(148, 163, 184, 0.12);
+        background-color: rgba(17, 22, 30, 0.82);
+    }
+
+    .nbu-stage-hero-filmstrip-summary {
+        border-color: rgba(203, 213, 225, 0.78);
+        background-color: rgba(255, 255, 255, 0.76);
+    }
+
+    .dark .nbu-stage-hero-filmstrip-summary {
+        border-color: rgba(148, 163, 184, 0.12);
+        background-color: rgba(18, 24, 33, 0.84);
+    }
+
+    .nbu-stage-hero-overlay-veil {
+        background-color: rgba(248, 250, 252, 0.56);
+    }
+
+    .dark .nbu-stage-hero-overlay-veil {
+        background-color: rgba(5, 8, 12, 0.56);
+    }
+
+    @layer utilities {
+        .nbu-scrollbar-subtle,
+        .scrollbar-thin {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+            scrollbar-gutter: stable;
+        }
+
+        .dark .nbu-scrollbar-subtle,
+        .dark .scrollbar-thin {
+            scrollbar-color: rgba(148, 163, 184, 0.42) transparent;
+        }
+
+        .nbu-scrollbar-subtle::-webkit-scrollbar,
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .nbu-scrollbar-subtle::-webkit-scrollbar-track,
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nbu-scrollbar-subtle::-webkit-scrollbar-thumb,
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            border: 2px solid transparent;
+            border-radius: 9999px;
+            background-clip: padding-box;
+            background-color: rgba(148, 163, 184, 0.38);
+        }
+
+        .nbu-scrollbar-subtle:hover::-webkit-scrollbar-thumb,
+        .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+            background-color: rgba(100, 116, 139, 0.52);
+        }
+
+        .dark .nbu-scrollbar-subtle::-webkit-scrollbar-thumb,
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: rgba(148, 163, 184, 0.42);
+        }
+
+        .dark .nbu-scrollbar-subtle:hover::-webkit-scrollbar-thumb,
+        .dark .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+            background-color: rgba(203, 213, 225, 0.5);
+        }
+    }
+    .nbu-stage-hero-status-pill {
+        background-color: rgba(255, 255, 255, 0.78);
+    }
+
+    .dark .nbu-stage-hero-status-pill {
+        background-color: rgba(11, 16, 23, 0.54);
+    }
+
+    .nbu-stage-hero-thumb-media {
+        background-color: rgba(241, 245, 249, 0.9);
+    }
+
+    .dark .nbu-stage-hero-thumb-media {
+        background-color: rgba(7, 10, 15, 0.92);
+    }
+
+    .nbu-stage-hero-thumb-placeholder {
+        background-color: rgba(241, 245, 249, 0.88);
+    }
+
+    .dark .nbu-stage-hero-thumb-placeholder {
+        background-color: rgba(15, 19, 26, 0.84);
+    }
+
+    .nbu-shell-surface-context-rail {
+        border-color: rgba(148, 163, 184, 0.2);
+        background: linear-gradient(180deg, rgba(251, 252, 254, 0.97), rgba(239, 244, 249, 0.93));
+        box-shadow: 0 22px 76px rgba(15, 23, 42, 0.08);
+    }
+
+    .dark .nbu-shell-surface-context-rail {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(14, 18, 25, 0.97), rgba(9, 12, 18, 0.93));
+        box-shadow: 0 22px 82px rgba(0, 0, 0, 0.4);
+    }
+
+    .nbu-shell-surface-context-rail .nbu-soft-well,
+    .nbu-shell-surface-context-rail .nbu-inline-panel,
+    .nbu-shell-surface-context-rail .nbu-dashed-panel {
+        border-color: rgba(203, 213, 225, 0.72);
+        background-color: rgba(255, 255, 255, 0.72);
+    }
+
+    .dark .nbu-shell-surface-context-rail .nbu-soft-well,
+    .dark .nbu-shell-surface-context-rail .nbu-inline-panel,
+    .dark .nbu-shell-surface-context-rail .nbu-dashed-panel {
+        border-color: rgba(148, 163, 184, 0.12);
+        background-color: rgba(17, 22, 30, 0.82);
+    }
+
+    .nbu-context-rail-callout {
+        border-color: rgba(125, 211, 252, 0.3);
+        background: linear-gradient(180deg, rgba(240, 249, 255, 0.84), rgba(255, 255, 255, 0.76));
+        box-shadow: 0 10px 24px rgba(14, 165, 233, 0.08);
+    }
+
+    .dark .nbu-context-rail-callout {
+        border-color: rgba(56, 189, 248, 0.16);
+        background: linear-gradient(180deg, rgba(11, 31, 40, 0.72), rgba(16, 20, 27, 0.86));
+        box-shadow: none;
+    }
+
+    .nbu-shell-surface-composer-dock {
+        border-color: rgba(251, 191, 36, 0.14);
+        background: linear-gradient(180deg, rgba(255, 252, 246, 0.98), rgba(246, 241, 233, 0.94));
+        box-shadow: 0 24px 78px rgba(180, 83, 9, 0.08);
+    }
+
+    .dark .nbu-shell-surface-composer-dock {
+        border-color: rgba(251, 191, 36, 0.08);
+        background: linear-gradient(180deg, rgba(18, 16, 14, 0.97), rgba(11, 14, 20, 0.93));
+        box-shadow: 0 24px 86px rgba(0, 0, 0, 0.42);
+    }
+
+    .nbu-shell-surface-composer-dock .nbu-subpanel,
+    .nbu-shell-surface-composer-dock .nbu-soft-well {
+        border-color: rgba(226, 232, 240, 0.72);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(248, 250, 252, 0.76));
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+    }
+
+    .dark .nbu-shell-surface-composer-dock .nbu-subpanel,
+    .dark .nbu-shell-surface-composer-dock .nbu-soft-well {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(19, 23, 31, 0.9), rgba(11, 15, 22, 0.84));
+        box-shadow: none;
+    }
+
+    .nbu-shell-surface-composer-dock .nbu-floating-panel {
+        border-color: rgba(251, 191, 36, 0.16);
+        background: linear-gradient(180deg, rgba(255, 248, 236, 0.97), rgba(252, 242, 224, 0.92));
+        box-shadow: 0 24px 68px rgba(180, 83, 9, 0.12);
+    }
+
+    .dark .nbu-shell-surface-composer-dock .nbu-floating-panel {
+        border-color: rgba(251, 191, 36, 0.08);
+        background: linear-gradient(180deg, rgba(32, 24, 17, 0.94), rgba(16, 18, 24, 0.92));
+        box-shadow: 0 26px 72px rgba(0, 0, 0, 0.42);
+    }
+
+    .nbu-composer-dock-textarea {
+        border-color: rgba(226, 232, 240, 0.8);
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 255, 255, 0.9));
+        color: rgb(15, 23, 42);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .nbu-composer-dock-textarea:focus {
+        border-color: rgba(251, 191, 36, 0.9);
+    }
+
+    .dark .nbu-composer-dock-textarea {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: linear-gradient(180deg, rgba(10, 13, 19, 0.98), rgba(16, 21, 29, 0.92));
+        color: rgb(243, 244, 246);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .nbu-shell-surface-actions-bar {
+        border-color: rgba(203, 213, 225, 0.76);
+        background: linear-gradient(180deg, rgba(250, 251, 253, 0.97), rgba(238, 242, 247, 0.92));
+        box-shadow: 0 18px 54px rgba(15, 23, 42, 0.08);
+    }
+
+    .dark .nbu-shell-surface-actions-bar {
+        border-color: rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(15, 19, 26, 0.97), rgba(9, 13, 19, 0.92));
+        box-shadow: 0 20px 62px rgba(0, 0, 0, 0.4);
+    }
+
+    .nbu-shell-surface-actions-bar .nbu-inline-panel {
+        border-color: rgba(203, 213, 225, 0.72);
+        background-color: rgba(255, 255, 255, 0.74);
+    }
+
+    .dark .nbu-shell-surface-actions-bar .nbu-inline-panel {
+        border-color: rgba(148, 163, 184, 0.12);
+        background-color: rgba(17, 22, 30, 0.84);
+    }
+
+    .nbu-overlay-panel-warm {
+        border-color: rgba(251, 191, 36, 0.18);
+        background: linear-gradient(180deg, rgba(255, 252, 246, 0.98), rgba(255, 247, 232, 0.96));
+        box-shadow: 0 32px 120px rgba(15, 23, 42, 0.24);
+    }
+
+    .dark .nbu-overlay-panel-warm {
+        border-color: rgba(251, 191, 36, 0.18);
+        background: linear-gradient(180deg, rgba(20, 16, 12, 0.98), rgba(10, 14, 20, 0.97));
+        box-shadow: 0 32px 120px rgba(0, 0, 0, 0.5);
+    }
+
+    .nbu-overlay-panel-neutral {
+        border-color: rgba(226, 232, 240, 0.82);
+        background: linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(244, 247, 251, 0.95));
+        box-shadow: 0 32px 120px rgba(15, 23, 42, 0.22);
+    }
+
+    .dark .nbu-overlay-panel-neutral {
+        border-color: rgba(100, 116, 139, 0.22);
+        background: linear-gradient(180deg, rgba(18, 22, 30, 0.98), rgba(10, 14, 20, 0.95));
+        box-shadow: 0 32px 120px rgba(0, 0, 0, 0.48);
+    }
+
+    .nbu-overlay-card-warm {
+        border-color: rgba(251, 191, 36, 0.18);
+        background: linear-gradient(180deg, rgba(255, 250, 240, 0.96), rgba(255, 244, 227, 0.92));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .dark .nbu-overlay-card-warm {
+        border-color: rgba(251, 191, 36, 0.18);
+        background: linear-gradient(180deg, rgba(56, 38, 11, 0.42), rgba(28, 22, 14, 0.38));
+        box-shadow: inset 0 1px 0 rgba(255, 244, 214, 0.04);
+    }
+
+    .nbu-overlay-card-neutral {
+        border-color: rgba(226, 232, 240, 0.82);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(247, 250, 252, 0.9));
+        box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+    }
+
+    .dark .nbu-overlay-card-neutral {
+        border-color: rgba(71, 85, 105, 0.55);
+        background: linear-gradient(180deg, rgba(23, 28, 36, 0.94), rgba(14, 18, 24, 0.9));
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    .nbu-overlay-pane-neutral {
+        background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.84));
+    }
+
+    .dark .nbu-overlay-pane-neutral {
+        background: linear-gradient(180deg, rgba(17, 22, 31, 0.92), rgba(12, 16, 23, 0.88));
+    }
+
+    .nbu-overlay-nav-shell {
+        border-color: rgba(226, 232, 240, 0.82);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 250, 252, 0.78));
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .dark .nbu-overlay-nav-shell {
+        border-color: rgba(71, 85, 105, 0.55);
+        background: linear-gradient(180deg, rgba(23, 28, 36, 0.92), rgba(14, 18, 24, 0.88));
+        box-shadow: none;
+    }
+}
+
+/* Add any custom global CSS overrides below */
+
+/* P7-6: Generate Button Shimmer Animation */
+@keyframes btn-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.btn-shimmer {
+    background: linear-gradient(110deg, #f59e0b 0%, #fbbf24 25%, #fde68a 50%, #fbbf24 75%, #f59e0b 100%);
+    background-size: 200% 100%;
+    animation: btn-shimmer 3s ease-in-out infinite;
+}
+
+.btn-shimmer:hover {
+    animation-duration: 1.5s;
+    filter: brightness(1.08);
+}
+
+.btn-shimmer:active {
+    filter: brightness(0.95);
+    transform: scale(0.97);
+}
+
+/* P7-6: Consistent hover scale for interactive cards */
+.hover-lift {
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}

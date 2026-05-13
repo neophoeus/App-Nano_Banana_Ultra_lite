@@ -1,0 +1,5 @@
+{
+    "name": "Nano Banana Ultra Lite",
+    "description": "A lightweight Google AI Studio image generation app built on Gemini image models with prompt, style, ratio, reference, sketch, and follow-up editing flows in a browser-only workspace.",
+    "requestFramePermissions": []
+}

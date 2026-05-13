@@ -1,0 +1,407 @@
+/**
+ * Utility for saving images in browser-managed storage and generating thumbnails
+ * for lightweight history display.
+ */
+
+import { ImageSidecarMetadata } from '../types';
+import {
+    buildBrowserSavedImageLoadUrl,
+    loadBrowserSavedImageDataUrl,
+    loadBrowserSavedImageMetadata,
+    persistBrowserSavedImageRecord,
+} from './browserImageStore';
+import { normalizeImageSidecarMetadata } from './imageSidecarMetadata';
+
+const THUMBNAIL_MAX_DIM = 200; // Max width or height for lightweight preview thumbnails
+const REFERENCE_PREVIEW_CACHE_LIMIT = 96;
+
+export const EDITOR_IMAGE_MAX_DIMENSION = 4096;
+
+const referencePreviewCache = new Map<string, string>();
+const referencePreviewInFlight = new Map<string, Promise<string>>();
+
+export type PreparedImageAsset = {
+    dataUrl: string;
+    wasResized: boolean;
+    width: number;
+    height: number;
+    mimeType: string;
+};
+
+export type PreparedImagePreviewAsset = PreparedImageAsset & {
+    previewDataUrl: string;
+};
+
+export type PersistedHistoryThumbnail = {
+    url: string;
+    thumbnailSavedFilename?: string;
+    thumbnailInline?: boolean;
+};
+
+export const buildSavedImageLoadUrl = (savedFilename: string): string => {
+    return buildBrowserSavedImageLoadUrl(savedFilename);
+};
+
+export const extractSavedFilename = (savedPath: string | null | undefined): string | undefined =>
+    savedPath ? savedPath.split(/[\\/]/).pop() : undefined;
+
+const getDataUrlExtension = (dataUrl: string): string =>
+    dataUrl.startsWith('data:image/png')
+        ? 'png'
+        : dataUrl.startsWith('data:image/jpeg')
+          ? 'jpg'
+          : dataUrl.startsWith('data:image/webp')
+            ? 'webp'
+            : 'png';
+
+const buildGeneratedFilenameStem = (prefix: string): string => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    return `${prefix}_${timestamp}_${crypto.randomUUID().slice(0, 8)}`;
+};
+
+const buildFilename = (stem: string, ext: string) => `${stem}.${ext}`;
+
+const extractFilenameStem = (filename: string): string => filename.replace(/\.[^.]+$/, '');
+
+const deriveThumbnailFilenameStem = (savedFilename: string): string =>
+    `${extractFilenameStem(savedFilename)}-thumbnail`;
+
+const touchReferencePreviewCacheEntry = (source: string, previewDataUrl: string): string => {
+    if (referencePreviewCache.has(source)) {
+        referencePreviewCache.delete(source);
+    }
+
+    referencePreviewCache.set(source, previewDataUrl);
+
+    while (referencePreviewCache.size > REFERENCE_PREVIEW_CACHE_LIMIT) {
+        const oldestSource = referencePreviewCache.keys().next().value;
+        if (typeof oldestSource !== 'string') {
+            break;
+        }
+        referencePreviewCache.delete(oldestSource);
+    }
+
+    return previewDataUrl;
+};
+
+const resolveImageSourceMimeType = (imageSource: string, fallback = 'image/png'): string => {
+    const match = imageSource.match(/^data:([^;,]+)[;,]/);
+    return match?.[1] || fallback;
+};
+
+const readBlobAsDataUrl = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to convert blob to data URL.'));
+        reader.readAsDataURL(blob);
+    });
+
+const canvasToDataUrl = (canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<string> =>
+    new Promise((resolve, reject) => {
+        if (typeof canvas.toBlob !== 'function') {
+            resolve(canvas.toDataURL(mimeType, quality));
+            return;
+        }
+
+        canvas.toBlob(
+            (blob) => {
+                if (!blob) {
+                    reject(new Error('Failed to encode canvas output.'));
+                    return;
+                }
+
+                void readBlobAsDataUrl(blob).then(resolve).catch(reject);
+            },
+            mimeType,
+            quality,
+        );
+    });
+
+const loadImageElement = (imageSource: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('Failed to load image.'));
+        image.src = imageSource;
+    });
+
+const normalizeLoadedImageSource = async (
+    image: HTMLImageElement,
+    source: string,
+    mimeType: string,
+    maxDimension: number,
+): Promise<PreparedImageAsset> => {
+    const constrained = constrainImageDimensions(image.width, image.height, maxDimension);
+
+    if (!constrained.wasResized) {
+        return {
+            dataUrl: source,
+            wasResized: false,
+            width: constrained.width,
+            height: constrained.height,
+            mimeType: resolveImageSourceMimeType(source, mimeType),
+        };
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = constrained.width;
+    canvas.height = constrained.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('Failed to create a normalization canvas context.');
+    }
+
+    context.drawImage(image, 0, 0, constrained.width, constrained.height);
+    const normalizedDataUrl = await canvasToDataUrl(canvas, mimeType);
+
+    return {
+        dataUrl: normalizedDataUrl,
+        wasResized: true,
+        width: constrained.width,
+        height: constrained.height,
+        mimeType,
+    };
+};
+
+export const constrainImageDimensions = (
+    width: number,
+    height: number,
+    maxDimension = EDITOR_IMAGE_MAX_DIMENSION,
+): { width: number; height: number; wasResized: boolean } => {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return { width: 0, height: 0, wasResized: false };
+    }
+
+    if (width <= maxDimension && height <= maxDimension) {
+        return { width, height, wasResized: false };
+    }
+
+    if (width > height) {
+        return {
+            width: maxDimension,
+            height: Math.round((height * maxDimension) / width),
+            wasResized: true,
+        };
+    }
+
+    return {
+        width: Math.round((width * maxDimension) / height),
+        height: maxDimension,
+        wasResized: true,
+    };
+};
+
+export const loadImageDimensions = (imageSource: string): Promise<{ width: number; height: number }> =>
+    new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+            resolve({
+                width: image.width,
+                height: image.height,
+            });
+        };
+        image.onerror = () => reject(new Error('Failed to load image dimensions.'));
+        image.src = imageSource;
+    });
+
+export const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+        reader.readAsDataURL(file);
+    });
+
+export const prepareImageAssetFromSource = async (
+    imageSource: string,
+    maxDimension = EDITOR_IMAGE_MAX_DIMENSION,
+    mimeType = 'image/png',
+): Promise<PreparedImageAsset> => {
+    const image = await loadImageElement(imageSource);
+    return normalizeLoadedImageSource(image, imageSource, mimeType, maxDimension);
+};
+
+export const normalizeImageDataUrl = (
+    dataUrl: string,
+    mimeType = 'image/png',
+    maxDimension = EDITOR_IMAGE_MAX_DIMENSION,
+): Promise<PreparedImageAsset> => prepareImageAssetFromSource(dataUrl, maxDimension, mimeType);
+
+export const prepareImageAssetFromFile = async (
+    file: File,
+    maxDimension = EDITOR_IMAGE_MAX_DIMENSION,
+): Promise<PreparedImageAsset> => {
+    const dataUrl = await readFileAsDataUrl(file);
+    return normalizeImageDataUrl(dataUrl, file.type || 'image/png', maxDimension);
+};
+
+export const clearReferencePreviewCache = (): void => {
+    referencePreviewCache.clear();
+    referencePreviewInFlight.clear();
+};
+
+export const getReferencePreviewDataUrl = (source: string): string | undefined => {
+    const cachedPreview = referencePreviewCache.get(source);
+    return cachedPreview ? touchReferencePreviewCacheEntry(source, cachedPreview) : undefined;
+};
+
+export const setReferencePreviewDataUrl = (source: string, previewDataUrl: string): string =>
+    touchReferencePreviewCacheEntry(source, previewDataUrl);
+
+/**
+ * Save a full-resolution image into browser-managed storage.
+ * Optionally saves a JSON sidecar with generation metadata.
+ * @returns A virtual output path on success, or null on failure.
+ */
+export async function saveImageToLocal(
+    dataUrl: string,
+    prefix: string = 'gemini',
+    metadata?: Record<string, unknown>,
+    filenameStem?: string,
+): Promise<string | null> {
+    const ext = getDataUrlExtension(dataUrl);
+    const filename = buildFilename(filenameStem || buildGeneratedFilenameStem(prefix), ext);
+
+    try {
+        return await persistBrowserSavedImageRecord(filename, dataUrl, metadata);
+    } catch (err) {
+        console.warn('Failed to save image to browser-managed storage:', err);
+        return null;
+    }
+}
+
+/**
+ * Generate a small thumbnail from a full-resolution data URL.
+ * Returns a compressed JPEG data URL suitable for in-memory history.
+ */
+export const generateThumbnail = (dataUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+
+            let w = img.width;
+            let h = img.height;
+            if (w > h) {
+                if (w > THUMBNAIL_MAX_DIM) {
+                    h = Math.round((h *= THUMBNAIL_MAX_DIM / w));
+                    w = THUMBNAIL_MAX_DIM;
+                }
+            } else {
+                if (h > THUMBNAIL_MAX_DIM) {
+                    w = Math.round((w *= THUMBNAIL_MAX_DIM / h));
+                    h = THUMBNAIL_MAX_DIM;
+                }
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, w, h);
+                // Lower quality to 0.5 to drastically reduce base64 size for local storage cache
+                resolve(canvas.toDataURL('image/jpeg', 0.5));
+            } else {
+                resolve(dataUrl);
+            }
+        };
+        img.onerror = () => {
+            reject(new Error('Failed to generate thumbnail'));
+        };
+        img.src = dataUrl;
+    });
+};
+
+export const ensureReferencePreviewDataUrl = async (source: string): Promise<string> => {
+    const cachedPreview = getReferencePreviewDataUrl(source);
+    if (cachedPreview) {
+        return cachedPreview;
+    }
+
+    const pendingPreview = referencePreviewInFlight.get(source);
+    if (pendingPreview) {
+        return pendingPreview;
+    }
+
+    const previewPromise = generateThumbnail(source)
+        .catch(() => source)
+        .then((previewDataUrl) => touchReferencePreviewCacheEntry(source, previewDataUrl))
+        .finally(() => {
+            referencePreviewInFlight.delete(source);
+        });
+
+    referencePreviewInFlight.set(source, previewPromise);
+    return previewPromise;
+};
+
+export const prepareImagePreviewAssetFromFile = async (
+    file: File,
+    maxDimension = EDITOR_IMAGE_MAX_DIMENSION,
+): Promise<PreparedImagePreviewAsset> => {
+    const preparedImage = await prepareImageAssetFromFile(file, maxDimension);
+    const previewDataUrl = await ensureReferencePreviewDataUrl(preparedImage.dataUrl);
+
+    return {
+        ...preparedImage,
+        previewDataUrl,
+    };
+};
+
+export async function persistHistoryThumbnail(
+    dataUrl: string,
+    prefix: string,
+    sourceSavedFilename?: string,
+): Promise<PersistedHistoryThumbnail> {
+    let thumbnailUrl = dataUrl;
+
+    try {
+        thumbnailUrl = await generateThumbnail(dataUrl);
+    } catch {
+        thumbnailUrl = dataUrl;
+    }
+
+    try {
+        const thumbnailFilenameStem = sourceSavedFilename
+            ? deriveThumbnailFilenameStem(sourceSavedFilename)
+            : undefined;
+        const savedPath = await saveImageToLocal(thumbnailUrl, `${prefix}-thumbnail`, undefined, thumbnailFilenameStem);
+        const thumbnailSavedFilename = extractSavedFilename(savedPath);
+
+        if (thumbnailSavedFilename) {
+            return {
+                url: buildSavedImageLoadUrl(thumbnailSavedFilename),
+                thumbnailSavedFilename,
+            };
+        }
+    } catch {
+        // Fall back to the inline preview for the current session only.
+    }
+
+    return {
+        url: thumbnailUrl,
+        thumbnailInline: true,
+    };
+}
+
+export async function loadImageMetadata(filename: string): Promise<ImageSidecarMetadata | null> {
+    try {
+        const metadata = await loadBrowserSavedImageMetadata(filename);
+        return metadata ? normalizeImageSidecarMetadata(metadata) : null;
+    } catch (err) {
+        console.error('Failed to load image metadata:', err);
+        return null;
+    }
+}
+/**
+ * Load a full-resolution image from browser-managed storage.
+ * Returns a base64 data URL.
+ */
+export async function loadFullImage(filename: string): Promise<string | null> {
+    try {
+        return await loadBrowserSavedImageDataUrl(filename);
+    } catch (err) {
+        console.error('Failed to load full image:', err);
+        return null;
+    }
+}

@@ -1,0 +1,664 @@
+import { useCallback, MutableRefObject } from 'react';
+import {
+    AspectRatio,
+    BatchPreviewTile,
+    ConversationRequestContext,
+    ExecutionMode,
+    GenerationFailureDisplayContext,
+    StageErrorState,
+    GenerationLineageContext,
+    ImageReceivedResult,
+    ImageSize,
+    ImageStyle,
+    ImageModel,
+    GeneratedImage as GeneratedImageType,
+    OutputFormat,
+    ResultPart,
+    ThinkingLevel,
+} from '../types';
+import {
+    GenerationLiveProgressEvent,
+    GenerationResult,
+    generateImageWithGemini,
+    checkApiKey,
+    promptForApiKey,
+} from '../services/geminiService';
+import { buildStageErrorState, getGenerationFailure } from '../utils/generationFailure';
+import {
+    buildSavedImageLoadUrl,
+    extractSavedFilename,
+    persistHistoryThumbnail,
+    saveImageToLocal,
+} from '../utils/imageSaveUtils';
+import { buildImageSidecarMetadata, normalizeImageSidecarMetadata } from '../utils/imageSidecarMetadata';
+import { deriveExecutionMode } from '../utils/executionMode';
+import { sanitizeSessionHintsForStorage } from '../utils/inlineImageDisplay';
+import {
+    buildResultPartFilenameStem as buildSavedResultPartFilenameStem,
+    buildSavedImageFilenameStem,
+} from '../utils/savedImageFilename';
+import { buildStyleTransferPrompt } from '../utils/styleRegistry';
+
+const MODEL_TRANSLATION_KEYS: Record<ImageModel, string> = {
+    'gemini-3.1-flash-image-preview': 'modelGemini31Flash',
+    'gemini-3-pro-image-preview': 'modelGemini3Pro',
+    'gemini-2.5-flash-image': 'modelGemini25Flash',
+};
+
+function getModelLabel(t: (key: string) => string, model: ImageModel): string {
+    return t(MODEL_TRANSLATION_KEYS[model]);
+}
+
+function getBatchResultIndex(item: GeneratedImageType): number {
+    const candidateIndex = item.metadata?.batchResultIndex;
+    return typeof candidateIndex === 'number' && Number.isFinite(candidateIndex) ? candidateIndex : -1;
+}
+
+function sortBatchHistoryItemsByVisualOrder(items: GeneratedImageType[]): GeneratedImageType[] {
+    return [...items].sort((leftItem, rightItem) => {
+        const leftIndex = getBatchResultIndex(leftItem);
+        const rightIndex = getBatchResultIndex(rightItem);
+
+        if (leftIndex !== rightIndex) {
+            return rightIndex - leftIndex;
+        }
+
+        return rightItem.createdAt - leftItem.createdAt;
+    });
+}
+
+function buildFailureDisplayContext(
+    result: GenerationResult,
+    batchHasSiblingSafetyBlockedFailure: boolean,
+): GenerationFailureDisplayContext | undefined {
+    if (
+        result.status === 'failed' &&
+        result.failure?.code === 'empty-response' &&
+        batchHasSiblingSafetyBlockedFailure
+    ) {
+        return {
+            hasSiblingSafetyBlockedFailure: true,
+        };
+    }
+
+    return undefined;
+}
+
+async function persistResultParts(
+    resultParts: ResultPart[] | undefined,
+    options: {
+        model: ImageModel;
+        mode: string;
+        prefix: string;
+        slotIndex: number;
+        requestCreatedAt: Date;
+        requestId: string;
+        sourceSavedFilename?: string;
+        primaryOutputImageUrl?: string;
+        primaryOutputDisplayUrl?: string;
+        primaryOutputSavedFilename?: string;
+    },
+): Promise<ResultPart[] | undefined> {
+    if (!resultParts?.length) {
+        return undefined;
+    }
+
+    return Promise.all(
+        resultParts.map(async (part) => {
+            if (part.kind === 'thought-text' || part.kind === 'output-text') {
+                return part;
+            }
+
+            if (options.primaryOutputImageUrl && part.imageUrl === options.primaryOutputImageUrl) {
+                return {
+                    ...part,
+                    imageUrl: options.primaryOutputDisplayUrl || part.imageUrl,
+                    savedFilename: options.primaryOutputSavedFilename || part.savedFilename,
+                };
+            }
+
+            const savedPath = await saveImageToLocal(
+                part.imageUrl,
+                `${options.prefix}-thought`,
+                {
+                    kind: part.kind,
+                    slotIndex: options.slotIndex,
+                    sequence: part.sequence,
+                },
+                buildSavedResultPartFilenameStem({
+                    model: options.model,
+                    mode: options.mode,
+                    slotIndex: options.slotIndex,
+                    createdAt: options.requestCreatedAt,
+                    requestId: options.requestId,
+                    sequence: part.sequence,
+                    sourceSavedFilename: options.sourceSavedFilename,
+                }),
+            );
+            const savedFilename = extractSavedFilename(savedPath);
+
+            if (!savedFilename) {
+                return part;
+            }
+
+            return {
+                ...part,
+                imageUrl: buildSavedImageLoadUrl(savedFilename),
+                savedFilename,
+            };
+        }),
+    );
+}
+
+type GenerationSourceOverride = {
+    sourceHistoryId: string | null;
+    sourceLineageAction?: 'continue' | 'branch' | null;
+};
+
+interface UsePerformGenerationProps {
+    t: (key: string) => string;
+    apiKeyReady: boolean;
+    setApiKeyReady: (val: boolean) => void;
+    handleApiKeyConnect: () => Promise<boolean>;
+    setIsGenerating: (val: boolean) => void;
+    setError: (val: StageErrorState | null) => void;
+    setGeneratedImageUrls: (val: React.SetStateAction<string[]>) => void;
+    setSelectedImageIndex: (val: number) => void;
+    setLogs: (val: React.SetStateAction<string[]>) => void;
+    addLog: (msg: string) => void;
+    abortControllerRef: MutableRefObject<AbortController | null>;
+    objectImages: string[];
+    characterImages: string[];
+    batchSize: number;
+    aspectRatio: AspectRatio;
+    outputFormat: OutputFormat;
+    temperature: number;
+    thinkingLevel: ThinkingLevel;
+    includeThoughts: boolean;
+    googleSearch: boolean;
+    imageSearch: boolean;
+    setBatchProgress: (val: { completed: number; total: number }) => void;
+    setGenerationMode: (val: string) => void;
+    setExecutionMode: (val: ExecutionMode) => void;
+    setDisplaySettings: (val: any) => void;
+    showNotification: (msg: string, type?: 'info' | 'error') => void;
+    setHistory: (val: React.SetStateAction<GeneratedImageType[]>) => void;
+    setIsEditing: (val: boolean) => void;
+    setEditingImageSource: (val: string | null) => void;
+    getGenerationLineageContext?: (params: {
+        mode: string;
+        editingInput?: string;
+        sourceOverride?: GenerationSourceOverride | null;
+    }) => GenerationLineageContext | null;
+    getConversationRequestContext?: (params: {
+        mode: string;
+        editingInput?: string;
+        batchSize: number;
+        sourceOverride?: GenerationSourceOverride | null;
+    }) => ConversationRequestContext | null;
+    onBatchPreviewStart?: (args: { sessionId: string; batchSize: number }) => void;
+    onBatchPreviewTileUpdate?: (args: { sessionId: string; tile: BatchPreviewTile }) => void;
+    onBatchPreviewComplete?: (args: { sessionId: string; historyItems: GeneratedImageType[] }) => void;
+    onBatchPreviewClear?: (args: { sessionId: string }) => void;
+    onLiveProgressEvent?: (event: GenerationLiveProgressEvent) => void;
+    onLiveProgressReset?: () => void;
+}
+
+export function usePerformGeneration(options: UsePerformGenerationProps) {
+    const {
+        t,
+        apiKeyReady,
+        setApiKeyReady,
+        handleApiKeyConnect,
+        setIsGenerating,
+        setError,
+        setGeneratedImageUrls,
+        setSelectedImageIndex,
+        setLogs,
+        addLog,
+        abortControllerRef,
+        objectImages,
+        characterImages,
+        batchSize,
+        aspectRatio,
+        outputFormat,
+        temperature,
+        thinkingLevel,
+        includeThoughts,
+        googleSearch,
+        imageSearch,
+        setBatchProgress,
+        setGenerationMode,
+        setExecutionMode,
+        setDisplaySettings,
+        showNotification,
+        setHistory,
+        setIsEditing,
+        setEditingImageSource,
+        getGenerationLineageContext,
+        getConversationRequestContext,
+        onBatchPreviewStart,
+        onBatchPreviewTileUpdate,
+        onBatchPreviewComplete,
+        onBatchPreviewClear,
+        onLiveProgressEvent,
+        onLiveProgressReset,
+    } = options;
+
+    const performGeneration = useCallback(
+        async (
+            targetPrompt: string,
+            targetRatio: AspectRatio | undefined,
+            targetSize: ImageSize,
+            targetStyle: ImageStyle,
+            targetModel: ImageModel,
+            editingInput?: string,
+            customBatchSize?: number,
+            customSize?: ImageSize,
+            explicitMode?: string,
+            extraObjectImages?: string[],
+            extraCharacterImages?: string[],
+            sourceOverride?: GenerationSourceOverride | null,
+        ) => {
+            const isStyleTransfer =
+                (objectImages.length > 0 || characterImages.length > 0) && targetStyle !== 'None' && !editingInput;
+
+            if (!targetPrompt.trim() && !editingInput && !isStyleTransfer) {
+                showNotification(t('errorNoPrompt'), 'error');
+                return;
+            }
+
+            let finalPrompt = targetPrompt;
+            if (isStyleTransfer && !finalPrompt.trim()) {
+                finalPrompt = buildStyleTransferPrompt(targetStyle);
+                addLog(t('logAutoFillStyle'));
+            }
+
+            if (!apiKeyReady) {
+                const connected = await handleApiKeyConnect();
+                if (!connected) return;
+                const ready = await checkApiKey();
+                if (!ready) return;
+                setApiKeyReady(true);
+            }
+
+            setIsGenerating(true);
+            setError(null);
+            setGeneratedImageUrls([]);
+            setSelectedImageIndex(0);
+            setLogs([]);
+            onLiveProgressReset?.();
+            const batchSessionId = crypto.randomUUID();
+            let didNotifyBatchPreviewComplete = false;
+
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            let finalObjectInputs: string[] = [];
+            let finalCharacterInputs: string[] = [];
+
+            if (editingInput) {
+                finalObjectInputs = [editingInput];
+                if (extraObjectImages && extraObjectImages.length > 0) {
+                    finalObjectInputs = [...finalObjectInputs, ...extraObjectImages];
+                }
+                if (extraCharacterImages && extraCharacterImages.length > 0) {
+                    finalCharacterInputs = [...extraCharacterImages];
+                }
+            } else {
+                if (objectImages.length > 0) finalObjectInputs = objectImages;
+                if (characterImages.length > 0) finalCharacterInputs = characterImages;
+            }
+
+            const currentBatchSize = customBatchSize !== undefined ? customBatchSize : batchSize;
+            const currentImageSize = customSize || targetSize;
+            const conversationContext =
+                getConversationRequestContext?.({
+                    mode: explicitMode,
+                    editingInput,
+                    batchSize: currentBatchSize,
+                    sourceOverride,
+                }) || null;
+            const currentExecutionMode = conversationContext
+                ? 'chat-continuation'
+                : deriveExecutionMode(currentBatchSize);
+            const variantGroupId = currentExecutionMode === 'interactive-batch-variants' ? crypto.randomUUID() : null;
+
+            setBatchProgress({ completed: 0, total: currentBatchSize });
+            onBatchPreviewStart?.({ sessionId: batchSessionId, batchSize: currentBatchSize });
+
+            let currentMode = explicitMode;
+            if (!currentMode) {
+                if (editingInput) currentMode = 'Inpainting';
+                else if (objectImages.length > 0 || characterImages.length > 0) currentMode = 'Image to Image/Mixing';
+                else currentMode = 'Text to Image';
+            }
+            const generationLineage =
+                getGenerationLineageContext?.({ mode: currentMode, editingInput, sourceOverride }) || null;
+            setGenerationMode(currentMode);
+            setExecutionMode(currentExecutionMode);
+
+            const effectiveAspectRatio = editingInput ? targetRatio : targetRatio || aspectRatio;
+
+            setDisplaySettings({
+                prompt: finalPrompt,
+                aspectRatio: effectiveAspectRatio || '1:1',
+                size: currentImageSize,
+                style: targetStyle,
+                batchSize: currentBatchSize,
+                model: targetModel,
+                outputFormat,
+                temperature,
+                thinkingLevel,
+                includeThoughts,
+                googleSearch,
+                imageSearch,
+            });
+
+            try {
+                addLog(t('logMode').replace('{0}', currentMode));
+                addLog(t('logSource').replace('{0}', getModelLabel(t, targetModel)));
+                addLog(t('logRequesting').replace('{0}', currentBatchSize.toString()).replace('{1}', currentImageSize));
+                const requestCreatedAt = new Date();
+                const requestId = crypto.randomUUID();
+
+                const handleImageReceived = async (url: string, slotIndex: number): Promise<ImageReceivedResult> => {
+                    const metadata = buildImageSidecarMetadata({
+                        prompt: finalPrompt,
+                        model: targetModel,
+                        style: targetStyle,
+                        aspectRatio: effectiveAspectRatio || '1:1',
+                        requestedImageSize: currentImageSize,
+                        outputFormat,
+                        temperature,
+                        thinkingLevel,
+                        includeThoughts,
+                        googleSearch,
+                        imageSearch,
+                        generationMode: currentMode,
+                        executionMode: currentExecutionMode,
+                        batchSize: currentBatchSize,
+                        batchResultIndex: slotIndex,
+                    });
+                    const prefix = editingInput ? `${targetModel}-edit` : `${targetModel}-gen`;
+                    const savedPath = await saveImageToLocal(
+                        url,
+                        prefix,
+                        metadata,
+                        buildSavedImageFilenameStem({
+                            model: targetModel,
+                            mode: currentMode,
+                            slotIndex,
+                            createdAt: requestCreatedAt,
+                            requestId,
+                        }),
+                    );
+                    const filename = extractSavedFilename(savedPath);
+                    const displayUrl = filename ? buildSavedImageLoadUrl(filename) : url;
+
+                    onBatchPreviewTileUpdate?.({
+                        sessionId: batchSessionId,
+                        tile: {
+                            id: `${batchSessionId}-${slotIndex}`,
+                            slotIndex,
+                            status: 'ready',
+                            previewUrl: displayUrl,
+                            error: null,
+                        },
+                    });
+
+                    if (filename) {
+                        addLog(t('logSaved').replace('{0}', filename || ''));
+                        return {
+                            displayUrl,
+                            savedFilename: filename,
+                        };
+                    } else {
+                        return {
+                            displayUrl,
+                        };
+                    }
+                };
+
+                const handleLogCallback = (msg: string) => addLog(msg);
+                const handleResultCallback = (result: GenerationResult) => {
+                    if (result.status === 'failed') {
+                        onBatchPreviewTileUpdate?.({
+                            sessionId: batchSessionId,
+                            tile: {
+                                id: `${batchSessionId}-${result.slotIndex}`,
+                                slotIndex: result.slotIndex,
+                                status: 'failed',
+                                previewUrl: null,
+                                error: result.error || null,
+                            },
+                        });
+                    }
+                };
+
+                const results = await generateImageWithGemini(
+                    {
+                        prompt: finalPrompt,
+                        aspectRatio: effectiveAspectRatio,
+                        imageSize: currentImageSize,
+                        style: targetStyle,
+                        objectImageInputs: finalObjectInputs,
+                        characterImageInputs: finalCharacterInputs,
+                        model: targetModel,
+                        outputFormat,
+                        temperature,
+                        thinkingLevel,
+                        includeThoughts,
+                        googleSearch,
+                        imageSearch,
+                        executionMode: currentExecutionMode,
+                        conversationContext,
+                        liveProgressBatchSessionId: batchSessionId,
+                    },
+                    currentBatchSize,
+                    handleImageReceived,
+                    handleLogCallback,
+                    controller.signal,
+                    (completed, total) => setBatchProgress({ completed, total }),
+                    handleResultCallback,
+                    onLiveProgressEvent,
+                );
+
+                const batchHasSiblingSafetyBlockedFailure = results.some(
+                    (result) => result.status === 'failed' && result.failure?.code === 'safety-blocked',
+                );
+                const newHistoryItems: GeneratedImageType[] = [];
+                for (const [resultIndex, res] of results.entries()) {
+                    const batchResultIndex =
+                        typeof res.slotIndex === 'number' && Number.isFinite(res.slotIndex)
+                            ? res.slotIndex
+                            : resultIndex;
+                    const failureContext = buildFailureDisplayContext(res, batchHasSiblingSafetyBlockedFailure);
+                    let thumbnailUrl = '';
+                    let thumbnailSavedFilename: string | undefined;
+                    let thumbnailInline: boolean | undefined;
+                    const sanitizedSessionHints = sanitizeSessionHintsForStorage(res.sessionHints || null);
+                    const sidecarMetadata = buildImageSidecarMetadata({
+                        prompt: finalPrompt,
+                        model: targetModel,
+                        style: targetStyle,
+                        aspectRatio: effectiveAspectRatio || '1:1',
+                        requestedImageSize: currentImageSize,
+                        outputFormat,
+                        temperature,
+                        thinkingLevel,
+                        includeThoughts,
+                        googleSearch,
+                        imageSearch,
+                        generationMode: currentMode,
+                        executionMode: currentExecutionMode,
+                        batchSize: currentBatchSize,
+                        batchResultIndex,
+                    });
+                    const prefix = editingInput ? `${targetModel}-edit` : `${targetModel}-gen`;
+                    const persistedResultParts = await persistResultParts(res.resultParts, {
+                        model: targetModel,
+                        mode: currentMode,
+                        prefix,
+                        slotIndex: batchResultIndex,
+                        requestCreatedAt,
+                        requestId,
+                        sourceSavedFilename: res.savedFilename,
+                        primaryOutputImageUrl: res.url,
+                        primaryOutputDisplayUrl: res.displayUrl,
+                        primaryOutputSavedFilename: res.savedFilename,
+                    });
+                    if (res.status === 'success' && res.url) {
+                        const persistedThumbnail = await persistHistoryThumbnail(res.url, prefix, res.savedFilename);
+                        thumbnailUrl = persistedThumbnail.url;
+                        thumbnailSavedFilename = persistedThumbnail.thumbnailSavedFilename;
+                        thumbnailInline = persistedThumbnail.thumbnailInline;
+                    }
+
+                    newHistoryItems.push({
+                        id: crypto.randomUUID(),
+                        url: thumbnailUrl,
+                        thumbnailSavedFilename,
+                        thumbnailInline,
+                        prompt: finalPrompt || 'Auto-fill',
+                        aspectRatio: effectiveAspectRatio || '1:1',
+                        size: currentImageSize,
+                        style: targetStyle,
+                        model: targetModel,
+                        createdAt: Date.now(),
+                        mode: currentMode,
+                        executionMode: currentExecutionMode,
+                        variantGroupId,
+                        status: res.status,
+                        openedAt: res.status === 'success' ? null : undefined,
+                        error: res.error,
+                        failure: res.failure,
+                        failureContext,
+                        savedFilename: res.savedFilename,
+                        text: res.text,
+                        thoughts: res.thoughts,
+                        resultParts: persistedResultParts,
+                        metadata:
+                            normalizeImageSidecarMetadata({
+                                ...sidecarMetadata,
+                                ...(res.metadata || {}),
+                            }) || sidecarMetadata,
+                        grounding: res.grounding,
+                        sessionHints: sanitizedSessionHints || undefined,
+                        conversationId: res.conversation?.conversationId || null,
+                        conversationBranchOriginId:
+                            res.conversation?.branchOriginId || conversationContext?.branchOriginId || null,
+                        conversationSourceHistoryId: conversationContext?.activeSourceHistoryId || null,
+                        conversationTurnIndex:
+                            currentExecutionMode === 'chat-continuation'
+                                ? conversationContext?.priorTurns.length || 0
+                                : null,
+                        parentHistoryId: generationLineage?.parentHistoryId || null,
+                        rootHistoryId: generationLineage?.rootHistoryId || null,
+                        sourceHistoryId: generationLineage?.sourceHistoryId || null,
+                        lineageAction: generationLineage?.lineageAction || 'root',
+                        lineageDepth: generationLineage?.lineageDepth || 0,
+                    } as GeneratedImageType);
+                }
+
+                const orderedHistoryItems = sortBatchHistoryItemsByVisualOrder(newHistoryItems);
+
+                setHistory((prev: GeneratedImageType[]) => [...orderedHistoryItems, ...prev]);
+                didNotifyBatchPreviewComplete = true;
+                onBatchPreviewComplete?.({
+                    sessionId: batchSessionId,
+                    historyItems: orderedHistoryItems,
+                });
+
+                const successCount = results.filter((r) => r.status === 'success').length;
+                const failCount = results.filter((r) => r.status === 'failed').length;
+
+                if (successCount === 0 && failCount > 0) {
+                    setError(
+                        buildStageErrorState(
+                            t,
+                            results[0].failure,
+                            results[0].error || t('errorAllFailed'),
+                            buildFailureDisplayContext(results[0], batchHasSiblingSafetyBlockedFailure),
+                        ),
+                    );
+                }
+
+                addLog(
+                    t('logSuccessFail').replace('{0}', successCount.toString()).replace('{1}', failCount.toString()),
+                );
+            } catch (err: any) {
+                console.error(err);
+                const errorMessage = err.message || 'Unknown error';
+
+                if (
+                    errorMessage === 'API_KEY_INVALID' ||
+                    errorMessage.includes('API key') ||
+                    errorMessage.includes('Gemini API is not available') ||
+                    errorMessage.includes('AI Studio session')
+                ) {
+                    addLog(t('logFatalError').replace('{0}', errorMessage));
+                    setError({
+                        summary: t('errorApiKey'),
+                        detail: null,
+                        failure: null,
+                    });
+                    setApiKeyReady(false);
+                    await promptForApiKey();
+                } else {
+                    setError(buildStageErrorState(t, getGenerationFailure(err), errorMessage));
+                    showNotification(t('statusFailed'), 'error');
+                }
+            } finally {
+                if (!didNotifyBatchPreviewComplete) {
+                    onBatchPreviewClear?.({ sessionId: batchSessionId });
+                }
+                onLiveProgressReset?.();
+                setIsGenerating(false);
+                abortControllerRef.current = null;
+                setBatchProgress({ completed: 0, total: 0 });
+            }
+        },
+        [
+            abortControllerRef,
+            addLog,
+            apiKeyReady,
+            aspectRatio,
+            batchSize,
+            characterImages,
+            getConversationRequestContext,
+            getGenerationLineageContext,
+            googleSearch,
+            handleApiKeyConnect,
+            imageSearch,
+            includeThoughts,
+            objectImages,
+            onBatchPreviewClear,
+            onBatchPreviewComplete,
+            onBatchPreviewStart,
+            onBatchPreviewTileUpdate,
+            onLiveProgressEvent,
+            onLiveProgressReset,
+            outputFormat,
+            setApiKeyReady,
+            setBatchProgress,
+            setDisplaySettings,
+            setEditingImageSource,
+            setError,
+            setExecutionMode,
+            setGeneratedImageUrls,
+            setGenerationMode,
+            setHistory,
+            setIsEditing,
+            setIsGenerating,
+            setLogs,
+            setSelectedImageIndex,
+            showNotification,
+            t,
+            temperature,
+            thinkingLevel,
+        ],
+    );
+
+    return { performGeneration };
+}
