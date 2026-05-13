@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, __dirname, '');
     const devPort = Number.parseInt(env.APP_DEV_PORT || process.env.APP_DEV_PORT || '22287', 10);
-    const aiStudioGeminiApiKey = env.GEMINI_API_KEY || '';
+    const aiStudioGeminiApiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
 
     return {
         define: {

@@ -24,7 +24,10 @@ export const resolveGeminiApiKey = (): string | null => getEnvGeminiApiKey();
 export const hasConfiguredGeminiApiKey = async (): Promise<boolean> => {
     const aiStudioHost = getAiStudioHost();
     if (typeof aiStudioHost?.hasSelectedApiKey === 'function') {
-        return Boolean(await aiStudioHost.hasSelectedApiKey());
+        const hasSelected = await aiStudioHost.hasSelectedApiKey();
+        if (hasSelected) {
+            return true;
+        }
     }
 
     return Boolean(resolveGeminiApiKey());

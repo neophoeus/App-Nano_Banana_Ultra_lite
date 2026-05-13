@@ -469,11 +469,16 @@ const cleanPromptToolResponseText = (text: string | undefined, fallback: string)
     (text?.trim() || fallback).replace(/^["']|["']$/g, '');
 
 const AI_STUDIO_API_UNAVAILABLE_ERROR = 'Gemini API is not available in this AI Studio session.';
+const AI_STUDIO_INTERCEPTED_API_KEY = 'AISTUDIO_INTERCEPTED_KEY';
 
 const getGeminiClient = (): GoogleGenAI => {
-    const apiKey = resolveGeminiApiKey();
+    let apiKey = resolveGeminiApiKey();
     if (!apiKey) {
-        throw new Error(AI_STUDIO_API_UNAVAILABLE_ERROR);
+        if (typeof window !== 'undefined' && window.aistudio) {
+            apiKey = AI_STUDIO_INTERCEPTED_API_KEY;
+        } else {
+            throw new Error(AI_STUDIO_API_UNAVAILABLE_ERROR);
+        }
     }
 
     return new GoogleGenAI({ apiKey });
