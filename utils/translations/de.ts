@@ -209,6 +209,9 @@ export const de = {
         'Diesen Arbeitsbereich auf den leeren Standardzustand zurücksetzen? Verlauf, Buhne, Prompt und Sitzungskontext werden entfernt. Wir empfehlen, zuerst Arbeitsbereich exportieren zu verwenden. Dies kann nicht ruckgangig gemacht werden.',
     clearHistoryConfirm: 'Arbeitsbereich leeren',
     clearHistoryCancel: 'Abbrechen',
+    windowCloseWarningTitle: 'Arbeitsbereich geht verloren',
+    windowCloseWarningMsg:
+        'Wenn du diese App schließt, wird der aktuelle Arbeitsbereich verworfen. Brich ab und kehre zuerst zurück, wenn du den Arbeitsbereich exportieren möchtest.',
 
     // Sketch Pad
     sketchTitle: 'Skizzenblock',

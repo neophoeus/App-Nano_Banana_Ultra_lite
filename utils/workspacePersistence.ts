@@ -1068,6 +1068,15 @@ export const loadWorkspaceSnapshot = (): WorkspacePersistenceSnapshot => {
     }
 };
 
+export const clearStoredWorkspaceSnapshot = (): void => {
+    try {
+        localStorage.removeItem(WORKSPACE_SNAPSHOT_STORAGE_KEY);
+        localStorage.removeItem(LEGACY_BRANCH_NAME_OVERRIDES_STORAGE_KEY);
+    } catch {
+        // Ignore storage cleanup failures; runtime state is still reset in memory.
+    }
+};
+
 export const saveWorkspaceSnapshot = (snapshot: WorkspacePersistenceSnapshot): void => {
     const normalized = sanitizeWorkspaceSnapshot(snapshot);
     const localSnapshot = buildPersistableWorkspaceSnapshot(normalized);

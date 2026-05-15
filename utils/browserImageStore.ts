@@ -19,6 +19,22 @@ let browserImageDbPromise: Promise<IDBDatabase | null> | null = null;
 export const getBrowserSavedImageStorageKey = (savedFilename: string): string =>
     `${BROWSER_SAVED_IMAGE_STORAGE_KEY_PREFIX}${savedFilename}`;
 
+const enrichBrowserSavedImageMetadata = (
+    savedFilename: string,
+    savedAt: number,
+    metadata?: Record<string, unknown>,
+): Record<string, unknown> | undefined => {
+    if (!metadata) {
+        return undefined;
+    }
+
+    return {
+        ...metadata,
+        filename: typeof metadata.filename === 'string' ? metadata.filename : savedFilename,
+        timestamp: typeof metadata.timestamp === 'string' ? metadata.timestamp : new Date(savedAt).toISOString(),
+    };
+};
+
 const getBrowserStorage = (kind: 'localStorage' | 'sessionStorage'): Storage | null => {
     if (typeof window === 'undefined') {
         return null;
@@ -32,7 +48,7 @@ const getBrowserStorage = (kind: 'localStorage' | 'sessionStorage'): Storage | n
     }
 };
 
-const normalizeBrowserSavedImageRecord = (value: unknown): BrowserSavedImageRecord | null => {
+const normalizeBrowserSavedImageRecord = (value: unknown, savedFilename = ''): BrowserSavedImageRecord | null => {
     if (!value || typeof value !== 'object') {
         return null;
     }
@@ -47,13 +63,16 @@ const normalizeBrowserSavedImageRecord = (value: unknown): BrowserSavedImageReco
         return null;
     }
 
+    const savedAt = typeof candidate.savedAt === 'number' ? candidate.savedAt : Date.now();
+    const metadata =
+        candidate.metadata && typeof candidate.metadata === 'object'
+            ? (candidate.metadata as Record<string, unknown>)
+            : undefined;
+
     return {
         dataUrl: candidate.dataUrl,
-        metadata:
-            candidate.metadata && typeof candidate.metadata === 'object'
-                ? (candidate.metadata as Record<string, unknown>)
-                : undefined,
-        savedAt: typeof candidate.savedAt === 'number' ? candidate.savedAt : Date.now(),
+        metadata: savedFilename ? enrichBrowserSavedImageMetadata(savedFilename, savedAt, metadata) : metadata,
+        savedAt,
     };
 };
 
@@ -73,7 +92,7 @@ const readBrowserSavedImageRecordFromStorage = (
             return null;
         }
 
-        const parsedRecord = normalizeBrowserSavedImageRecord(JSON.parse(rawRecord));
+        const parsedRecord = normalizeBrowserSavedImageRecord(JSON.parse(rawRecord), savedFilename);
         if (!parsedRecord) {
             storage.removeItem(storageKey);
             return null;
@@ -92,27 +111,8 @@ const readBrowserSavedImageRecordFromStorage = (
     }
 };
 
-const writeBrowserSavedImageRecordToStorage = (
-    storage: Storage | null,
-    savedFilename: string,
-    record: BrowserSavedImageRecord,
-): boolean => {
-    if (!storage) {
-        return false;
-    }
-
-    try {
-        storage.setItem(getBrowserSavedImageStorageKey(savedFilename), JSON.stringify(record));
-        return true;
-    } catch {
-        return false;
-    }
-};
-
 const cacheBrowserSavedImageRecord = (savedFilename: string, record: BrowserSavedImageRecord): void => {
     browserSavedImageCache.set(savedFilename, record);
-    writeBrowserSavedImageRecordToStorage(getBrowserStorage('localStorage'), savedFilename, record);
-    writeBrowserSavedImageRecordToStorage(getBrowserStorage('sessionStorage'), savedFilename, record);
 };
 
 const openBrowserImageDb = async (): Promise<IDBDatabase | null> => {
@@ -146,29 +146,6 @@ const openBrowserImageDb = async (): Promise<IDBDatabase | null> => {
     return browserImageDbPromise;
 };
 
-const persistBrowserSavedImageRecordToDb = async (
-    savedFilename: string,
-    record: BrowserSavedImageRecord,
-): Promise<void> => {
-    const database = await openBrowserImageDb();
-    if (!database) {
-        return;
-    }
-
-    await new Promise<void>((resolve, reject) => {
-        try {
-            const transaction = database.transaction(BROWSER_IMAGE_DB_STORE, 'readwrite');
-            const store = transaction.objectStore(BROWSER_IMAGE_DB_STORE);
-            store.put(record, savedFilename);
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error || new Error('Failed to store browser image asset.'));
-            transaction.onabort = () => reject(transaction.error || new Error('Browser image asset write aborted.'));
-        } catch (error) {
-            reject(error);
-        }
-    });
-};
-
 const readBrowserSavedImageRecordFromDb = async (savedFilename: string): Promise<BrowserSavedImageRecord | null> => {
     const database = await openBrowserImageDb();
     if (!database) {
@@ -180,7 +157,7 @@ const readBrowserSavedImageRecordFromDb = async (savedFilename: string): Promise
             const transaction = database.transaction(BROWSER_IMAGE_DB_STORE, 'readonly');
             const store = transaction.objectStore(BROWSER_IMAGE_DB_STORE);
             const request = store.get(savedFilename);
-            request.onsuccess = () => resolve(normalizeBrowserSavedImageRecord(request.result));
+            request.onsuccess = () => resolve(normalizeBrowserSavedImageRecord(request.result, savedFilename));
             request.onerror = () => resolve(null);
             transaction.onabort = () => resolve(null);
         } catch {
@@ -206,19 +183,14 @@ export const persistBrowserSavedImageRecord = async (
     dataUrl: string,
     metadata?: Record<string, unknown>,
 ): Promise<string> => {
+    const savedAt = Date.now();
     const record: BrowserSavedImageRecord = {
         dataUrl,
-        metadata,
-        savedAt: Date.now(),
+        metadata: enrichBrowserSavedImageMetadata(savedFilename, savedAt, metadata),
+        savedAt,
     };
 
     cacheBrowserSavedImageRecord(savedFilename, record);
-
-    try {
-        await persistBrowserSavedImageRecordToDb(savedFilename, record);
-    } catch {
-        // Keep the synchronous cache even when durable browser storage is unavailable.
-    }
 
     return `${BROWSER_SAVED_IMAGE_PATH_PREFIX}${savedFilename}`;
 };
@@ -265,16 +237,65 @@ export const collectBrowserSavedImageRecords = async (
 
 export const hydrateBrowserSavedImageRecords = (records: Record<string, unknown>): void => {
     Object.entries(records).forEach(([savedFilename, value]) => {
-        const normalizedRecord = normalizeBrowserSavedImageRecord(value);
+        const normalizedRecord = normalizeBrowserSavedImageRecord(value, savedFilename);
         if (!normalizedRecord) {
             return;
         }
 
         cacheBrowserSavedImageRecord(savedFilename, normalizedRecord);
-        void persistBrowserSavedImageRecordToDb(savedFilename, normalizedRecord).catch(() => {
-            // Keep import hydration non-blocking when IndexedDB is unavailable.
-        });
     });
+};
+
+export const clearBrowserSavedImageMemoryCache = (): void => {
+    browserSavedImageCache.clear();
+};
+
+const clearBrowserSavedImageRecordsFromStorage = (storage: Storage | null): void => {
+    if (!storage) {
+        return;
+    }
+
+    for (let index = storage.length - 1; index >= 0; index -= 1) {
+        const key = storage.key(index);
+        if (key?.startsWith(BROWSER_SAVED_IMAGE_STORAGE_KEY_PREFIX)) {
+            storage.removeItem(key);
+        }
+    }
+};
+
+const deleteBrowserImageDatabase = async (): Promise<void> => {
+    if (typeof indexedDB === 'undefined') {
+        return;
+    }
+
+    const existingDatabase = browserImageDbPromise ? await browserImageDbPromise.catch(() => null) : null;
+    existingDatabase?.close();
+    browserImageDbPromise = null;
+
+    await new Promise<void>((resolve) => {
+        try {
+            const request = indexedDB.deleteDatabase(BROWSER_IMAGE_DB_NAME);
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+            request.onblocked = () => resolve();
+        } catch {
+            resolve();
+        }
+    });
+};
+
+export const clearBrowserSavedImageDurableStorage = async (): Promise<void> => {
+    clearBrowserSavedImageRecordsFromStorage(getBrowserStorage('localStorage'));
+    clearBrowserSavedImageRecordsFromStorage(getBrowserStorage('sessionStorage'));
+    await deleteBrowserImageDatabase();
+};
+
+export const clearBrowserSavedImageRecords = async ({ includeMemory = true } = {}): Promise<void> => {
+    if (includeMemory) {
+        clearBrowserSavedImageMemoryCache();
+    }
+
+    await clearBrowserSavedImageDurableStorage();
 };
 
 export const buildBrowserSavedImageLoadUrl = (savedFilename: string): string =>

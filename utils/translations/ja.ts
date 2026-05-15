@@ -201,6 +201,9 @@ export const ja = {
         'このワークスペースを既定の空の状態に戻しますか？履歴、ステージ、プロンプト、セッション文脈は削除されます。先にワークスペースを書き出しを使うことをおすすめします。この操作は取り消せません。',
     clearHistoryConfirm: 'ワークスペースを消去',
     clearHistoryCancel: 'キャンセル',
+    windowCloseWarningTitle: 'ワークスペースは失われます',
+    windowCloseWarningMsg:
+        'このアプリを閉じると現在のワークスペースは破棄されます。保存したい場合はキャンセルして戻り、先にワークスペースを書き出してください。',
 
     // Sketch Pad
     sketchTitle: 'スケッチパッド',

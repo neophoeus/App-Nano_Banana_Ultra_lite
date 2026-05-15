@@ -236,6 +236,9 @@ export const zh_CN = {
         '您确定要将这个工作区重置为默认空白状态吗？历史、舞台、提示词与会话上下文都会被清除。建议先使用导出工作区。此操作无法撤销。',
     clearHistoryConfirm: '直接清除',
     clearHistoryCancel: '取消',
+    windowCloseWarningTitle: '关闭后将失去工作区',
+    windowCloseWarningMsg:
+        '关闭这个 App 会失去当前工作区。若要保留历史、舞台、提示词与会话上下文，请取消并先返回导出工作区。',
 
     // Sketch Pad
     sketchTitle: '手绘画板',

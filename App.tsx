@@ -6,6 +6,7 @@ import {
     ImageModel,
     ResultPart,
     ViewerComposerSettingsSnapshot,
+    WorkspacePersistenceSnapshot,
 } from './types';
 import ComposerAdvancedSettingsDialog from './components/ComposerAdvancedSettingsDialog';
 import ComposerSettingsPanel from './components/ComposerSettingsPanel';
@@ -38,10 +39,9 @@ import {
     topLauncherCompactLabelClassName,
 } from './utils/workspaceTopLauncherStyles';
 import {
+    clearStoredWorkspaceSnapshot,
     EMPTY_WORKSPACE_COMPOSER_STATE,
     EMPTY_WORKSPACE_SNAPSHOT,
-    loadWorkspaceSnapshot,
-    saveWorkspaceSnapshot,
 } from './utils/workspacePersistence';
 import { hasRestorableWorkspaceContent } from './utils/workspaceSnapshotState';
 import { deriveGroundingMode, getAvailableGroundingModes } from './utils/groundingMode';
@@ -94,6 +94,7 @@ import {
 import { buildResultPartFilenameStem, buildSavedImageFilenameStem } from './utils/savedImageFilename';
 import { downloadImageSource, downloadJsonDocument, stripFilenameExtension } from './utils/browserDownload';
 import { WORKSPACE_OVERLAY_Z_INDEX } from './constants/workspaceOverlays';
+import { clearBrowserSavedImageRecords } from './utils/browserImageStore';
 
 const ImageEditor = lazy(() => import('./components/ImageEditor'));
 const GeneratedImage = lazy(() => import('./components/GeneratedImage'));
@@ -137,8 +138,18 @@ const TopLauncherSignal = ({ active, dataTestId }: { active: boolean; dataTestId
     );
 };
 
-const App: React.FC = () => {
-    const [initialWorkspaceSnapshot] = useState(() => loadWorkspaceSnapshot());
+type AppProps = {
+    initialWorkspaceSnapshotOverride?: WorkspacePersistenceSnapshot;
+    persistWorkspaceSnapshotOnChange?: boolean;
+};
+
+const App: React.FC<AppProps> = ({
+    initialWorkspaceSnapshotOverride,
+    persistWorkspaceSnapshotOnChange = false,
+}) => {
+    const [initialWorkspaceSnapshot] = useState(
+        () => initialWorkspaceSnapshotOverride || EMPTY_WORKSPACE_SNAPSHOT,
+    );
     const initialActiveResult = initialWorkspaceSnapshot.workspaceSession.activeResult;
     const initialComposerState = initialWorkspaceSnapshot.composerState || EMPTY_WORKSPACE_COMPOSER_STATE;
     const [apiKeyReady, setApiKeyReady] = useState(false);
@@ -210,6 +221,11 @@ const App: React.FC = () => {
     const languageChangeRequestRef = useRef(0);
     const lastPromotedHistoryIdRef = useRef<string | null>(null);
     const activeBatchPreviewSessionRef = useRef<BatchPreviewSession | null>(null);
+
+    useEffect(() => {
+        clearStoredWorkspaceSnapshot();
+        void clearBrowserSavedImageRecords();
+    }, []);
 
     const {
         generatedImageUrls,
@@ -1018,6 +1034,7 @@ const App: React.FC = () => {
         historyCount: history.length,
         generatedImageCount: generatedImageUrls.length,
         orderedReferenceAssets,
+        hasDraftPrompt: prompt.trim().length > 0,
         aspectRatio,
         setApiKeyReady,
         setCurrentLang,
@@ -1102,6 +1119,7 @@ const App: React.FC = () => {
     });
 
     const { composeCurrentWorkspaceSnapshot } = useWorkspaceSnapshotPersistence({
+        enabled: persistWorkspaceSnapshotOnChange,
         history,
         stagedAssets,
         workflowLogs: logs,
@@ -1156,7 +1174,8 @@ const App: React.FC = () => {
         setBranchRenameDraft,
     });
     const applyEmptyWorkspaceSnapshot = useCallback(() => {
-        saveWorkspaceSnapshot(EMPTY_WORKSPACE_SNAPSHOT);
+        clearStoredWorkspaceSnapshot();
+        void clearBrowserSavedImageRecords();
         applyWorkspaceSnapshot(EMPTY_WORKSPACE_SNAPSHOT);
     }, [applyWorkspaceSnapshot]);
 

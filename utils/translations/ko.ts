@@ -201,6 +201,9 @@ export const ko = {
         '이 작업공간을 기본 빈 상태로 되돌릴까요? 기록, 스테이지, 프롬프트, 세션 문맥은 삭제됩니다. 먼저 워크스페이스 내보내기를 사용하는 것을 권장합니다. 이 작업은 되돌릴 수 없습니다.',
     clearHistoryConfirm: '작업공간 비우기',
     clearHistoryCancel: '취소',
+    windowCloseWarningTitle: '작업공간이 사라집니다',
+    windowCloseWarningMsg:
+        '이 앱을 닫으면 현재 작업공간이 삭제됩니다. 보관하려면 먼저 취소하고 돌아가 작업공간을 내보내세요.',
 
     // Sketch Pad
     sketchTitle: '스케치 패드',

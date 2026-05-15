@@ -181,16 +181,17 @@ export function useWorkspaceViewerProvenanceState({
 
     const viewerMetadataSidecarState = getImageSidecarMetadataState(selectedMetadata);
     const viewerHasPersistedSidecarMetadata = isPersistedImageSidecarMetadata(selectedMetadata);
+    const viewerSelectedMetadata = useMemo(() => normalizeImageSidecarMetadata(selectedMetadata), [selectedMetadata]);
     const viewerSettingsMetadata = useMemo(() => {
-        if (!currentViewedCompletedHistoryMetadata && !viewerHasPersistedSidecarMetadata) {
+        if (!currentViewedCompletedHistoryMetadata && !viewerSelectedMetadata) {
             return null;
         }
 
         return normalizeImageSidecarMetadata({
             ...(currentViewedCompletedHistoryMetadata || {}),
-            ...(viewerHasPersistedSidecarMetadata ? (selectedMetadata as Record<string, unknown>) : {}),
+            ...(viewerSelectedMetadata || {}),
         });
-    }, [currentViewedCompletedHistoryMetadata, selectedMetadata, viewerHasPersistedSidecarMetadata]);
+    }, [currentViewedCompletedHistoryMetadata, viewerSelectedMetadata]);
     const viewerSettingsSnapshot = useMemo(
         () => buildViewerComposerSettingsSnapshot(currentViewedCompletedHistoryItem, viewerSettingsMetadata),
         [currentViewedCompletedHistoryItem, viewerSettingsMetadata],
@@ -204,12 +205,12 @@ export function useWorkspaceViewerProvenanceState({
             return viewerMetadataSidecarState;
         }
 
-        if (viewerHasPersistedSidecarMetadata) {
+        if (viewerSettingsMetadata || viewerHasPersistedSidecarMetadata) {
             return 'ready' as const;
         }
 
         return currentViewedCompletedHistoryItem.savedFilename ? ('loading' as const) : ('missing' as const);
-    }, [currentViewedCompletedHistoryItem, viewerHasPersistedSidecarMetadata, viewerMetadataSidecarState]);
+    }, [currentViewedCompletedHistoryItem, viewerHasPersistedSidecarMetadata, viewerMetadataSidecarState, viewerSettingsMetadata]);
     const viewerMetadataLoadingLabel = t('workspaceViewerMetadataLoading');
     const viewerMetadataUnavailableLabel = t('workspaceViewerMetadataUnavailable');
     const viewerMetadataStateMessage =
@@ -243,7 +244,7 @@ export function useWorkspaceViewerProvenanceState({
     );
 
     const viewerMetadataAspectRatio = resolveViewerMetadataValue(
-        typeof selectedMetadata?.aspectRatio === 'string' ? selectedMetadata.aspectRatio : null,
+        typeof viewerSettingsMetadata?.aspectRatio === 'string' ? viewerSettingsMetadata.aspectRatio : null,
         viewSettings.aspectRatio,
     );
     const viewerMetadataModel = isKnownImageModel(viewerSettingsMetadata?.model)
@@ -259,40 +260,40 @@ export function useWorkspaceViewerProvenanceState({
         viewerMetadataModelSupportsSizeControl ? viewSettings.size : viewerMetadataUnavailableLabel,
     );
     const viewerMetadataStyleLabel = resolveViewerMetadataValue(
-        typeof selectedMetadata?.style === 'string' ? getStyleLabel(selectedMetadata.style as ImageStyle) : null,
+        typeof viewerSettingsMetadata?.style === 'string' ? getStyleLabel(viewerSettingsMetadata.style as ImageStyle) : null,
         getStyleLabel(viewSettings.style),
     );
     const viewerMetadataModelLabel = resolveViewerMetadataValue(
-        isKnownImageModel(selectedMetadata?.model)
-            ? getModelLabel(selectedMetadata.model)
-            : typeof selectedMetadata?.model === 'string'
-              ? selectedMetadata.model
+        isKnownImageModel(viewerSettingsMetadata?.model)
+            ? getModelLabel(viewerSettingsMetadata.model)
+            : typeof viewerSettingsMetadata?.model === 'string'
+              ? viewerSettingsMetadata.model
               : null,
         getModelLabel(viewSettings.model),
     );
     const viewerMetadataTemperature = resolveViewerMetadataValue(
-        typeof selectedMetadata?.temperature === 'number' ? formatTemperature(selectedMetadata.temperature) : null,
+        typeof viewerSettingsMetadata?.temperature === 'number' ? formatTemperature(viewerSettingsMetadata.temperature) : null,
         formatTemperature(viewSettings.temperature),
     );
     const viewerMetadataOutputFormat = resolveViewerMetadataValue(
-        typeof selectedMetadata?.outputFormat === 'string'
-            ? getOutputFormatSummaryLabel(selectedMetadata.outputFormat)
+        typeof viewerSettingsMetadata?.outputFormat === 'string'
+            ? getOutputFormatSummaryLabel(viewerSettingsMetadata.outputFormat)
             : null,
         getOutputFormatSummaryLabel(viewSettings.outputFormat),
     );
     const viewerMetadataThinkingLevel = resolveViewerMetadataValue(
-        typeof selectedMetadata?.thinkingLevel === 'string'
-            ? getThinkingLevelSummaryLabel(selectedMetadata.thinkingLevel)
+        typeof viewerSettingsMetadata?.thinkingLevel === 'string'
+            ? getThinkingLevelSummaryLabel(viewerSettingsMetadata.thinkingLevel)
             : null,
         getThinkingLevelSummaryLabel(viewSettings.thinkingLevel),
     );
     const viewerMetadataGrounding = resolveViewerMetadataValue(
-        getMetadataGroundingModeLabel(selectedMetadata),
+        getMetadataGroundingModeLabel(viewerSettingsMetadata),
         t(getGroundingModeTranslationKey(deriveGroundingMode(viewSettings.googleSearch, viewSettings.imageSearch))),
     );
     const viewerMetadataReturnThoughts = resolveViewerMetadataValue(
-        typeof selectedMetadata?.includeThoughts === 'boolean'
-            ? getThoughtVisibilitySummaryLabel(selectedMetadata.includeThoughts)
+        typeof viewerSettingsMetadata?.includeThoughts === 'boolean'
+            ? getThoughtVisibilitySummaryLabel(viewerSettingsMetadata.includeThoughts)
             : null,
         getThoughtVisibilitySummaryLabel(viewSettings.includeThoughts),
     );

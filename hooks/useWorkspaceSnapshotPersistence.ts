@@ -8,12 +8,11 @@ import {
     WorkspaceConversationState,
     WorkspaceSessionState,
 } from '../types';
-import {
-    sanitizeWorkspaceSnapshot,
-    saveWorkspaceSnapshot,
-} from '../utils/workspacePersistence';
+import { sanitizeWorkspaceSnapshot } from '../utils/workspacePersistence';
+import { saveWorkspaceSnapshot } from '../utils/workspacePersistence';
 
 type UseWorkspaceSnapshotPersistenceArgs = {
+    enabled?: boolean;
     history: GeneratedImage[];
     stagedAssets: StageAsset[];
     workflowLogs: string[];
@@ -28,6 +27,7 @@ type UseWorkspaceSnapshotPersistenceArgs = {
 };
 
 export function useWorkspaceSnapshotPersistence({
+    enabled = false,
     history,
     stagedAssets,
     workflowLogs,
@@ -75,9 +75,13 @@ export function useWorkspaceSnapshotPersistence({
     );
 
     useEffect(() => {
+        if (!enabled) {
+            return;
+        }
+
         const snapshot = composeCurrentWorkspaceSnapshot();
         saveWorkspaceSnapshot(snapshot);
-    }, [composeCurrentWorkspaceSnapshot]);
+    }, [composeCurrentWorkspaceSnapshot, enabled]);
 
     return {
         composeCurrentWorkspaceSnapshot,

@@ -1,4 +1,4 @@
-# Nano Banana Ultra *lite*
+# Nano Banana Ultra _lite_
 
 [English](#english) | [繁體中文](#繁體中文)
 
@@ -6,11 +6,11 @@
 
 ## English
 
-Nano Banana Ultra *lite* is the browser-only lightweight frontend edition of [App-Nano_Banana_Ultra](https://github.com/neophoeus/App-Nano_Banana_Ultra).
+Nano Banana Ultra _lite_ is the browser-only lightweight frontend edition of [App-Nano_Banana_Ultra](https://github.com/neophoeus/App-Nano_Banana_Ultra).
 
 It keeps the fast local workspace flow for Gemini image generation, references, style control, sketch and editor entry points, and browser-side persistence, while removing heavier Ultra-only surfaces that do not fit the Lite product boundary.
 
-Nano Banana Ultra *lite* is intended to run inside Google AI Studio. Gemini API access comes from the AI Studio environment automatically; *lite* does not support manual browser API-key entry or a separate local standalone key flow.
+Nano Banana Ultra _lite_ is intended to run inside Google AI Studio. Gemini API access comes from the AI Studio environment automatically; _lite_ does not support manual browser API-key entry or a separate local standalone key flow.
 
 ## Lite v1.0 Scope
 
@@ -31,9 +31,9 @@ Nano Banana Ultra *lite* is intended to run inside Google AI Studio. Gemini API 
 Use the upstream Ultra project when you need the full product surface, broader recovery flows, or heavier engineering and testing infrastructure:
 
 - Upstream repo: <https://github.com/neophoeus/App-Nano_Banana_Ultra>
-- Local/manual API-key workflow: use the full Ultra app instead of *lite*
+- Local/manual API-key workflow: use the full Ultra app instead of _lite_
 
-Use *lite* when you want the simpler browser-first frontend experience with a smaller maintenance surface.
+Use _lite_ when you want the simpler browser-first frontend experience with a smaller maintenance surface.
 
 ## Version
 
@@ -73,11 +73,11 @@ Release notes: see [CHANGELOG.md](CHANGELOG.md).
 
 ## 繁體中文
 
-Nano Banana Ultra *lite* 是 [App-Nano_Banana_Ultra](https://github.com/neophoeus/App-Nano_Banana_Ultra) 的瀏覽器前端輕量版。
+Nano Banana Ultra _lite_ 是 [App-Nano_Banana_Ultra](https://github.com/neophoeus/App-Nano_Banana_Ultra) 的瀏覽器前端輕量版。
 
 它保留了 Gemini 影像生成、參考圖、風格控制、草圖與編輯器入口，以及瀏覽器端工作區保存這些核心前端流程，同時移除了不適合 Lite 邊界的較重型 Ultra 能力。
 
-*lite* 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環境自動提供；*lite* 不支援手動在瀏覽器輸入 API key，也不提供獨立本機 key 流程。
+_lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環境自動提供；_lite_ 不支援手動在瀏覽器輸入 API key，也不提供獨立本機 key 流程。
 
 ## Lite v1.0 範圍
 
@@ -100,11 +100,11 @@ Nano Banana Ultra *lite* 是 [App-Nano_Banana_Ultra](https://github.com/neophoeu
 - 上游 repo：<https://github.com/neophoeus/App-Nano_Banana_Ultra>
 - 本機或手動 API key 使用情境：請改用完整版 Ultra
 
-如果你要的是較簡單、較容易維護、以瀏覽器前端為主的體驗，就使用 *lite*。
+如果你要的是較簡單、較容易維護、以瀏覽器前端為主的體驗，就使用 _lite_。
 
 ## 版本
 
-目前 Lite 版本：`v1.0.0`
+目前 Lite 版本：`v1.0.1`
 
 版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
 
