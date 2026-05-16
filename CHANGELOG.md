@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.2 - 2026-05-16
+
+- Viewing another history image no longer clears the current object and character reference images.
+- Continue and branch actions from history now preserve workspace reference images unless the user explicitly clears them.
+- The explicit clear-references action remains the intentional path for removing object and character references.
+
 ## v1.1.1 - 2026-05-16
 
 - Canceling a multi-image Lite run now enters a dedicated background finalizing state instead of freezing the whole foreground UI until the canceled batch fully settles.
