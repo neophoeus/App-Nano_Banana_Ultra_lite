@@ -21,6 +21,8 @@ type UseComposerSettingsPanelPropsArgs = {
     placeholder: string;
     enterToSubmit: boolean;
     isGenerating: boolean;
+    isActionLocked?: boolean;
+    isCancelFinalizing?: boolean;
     isEnhancingPrompt: boolean;
     activePromptTool?: ComposerSettingsPanelProps['activePromptTool'];
     currentLanguage: Language;
@@ -79,6 +81,8 @@ export function useComposerSettingsPanelProps({
     placeholder,
     enterToSubmit,
     isGenerating,
+    isActionLocked,
+    isCancelFinalizing,
     isEnhancingPrompt,
     activePromptTool,
     currentLanguage,
@@ -181,6 +185,8 @@ export function useComposerSettingsPanelProps({
             placeholder,
             enterToSubmit,
             isGenerating,
+            isActionLocked,
+            isCancelFinalizing,
             isEnhancingPrompt,
             activePromptTool,
             currentLanguage,
@@ -221,6 +227,8 @@ export function useComposerSettingsPanelProps({
             placeholder,
             enterToSubmit,
             isGenerating,
+            isActionLocked,
+            isCancelFinalizing,
             isEnhancingPrompt,
             activePromptTool,
             currentLanguage,

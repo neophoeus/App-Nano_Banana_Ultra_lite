@@ -24,6 +24,8 @@ export type ComposerSettingsPanelProps = {
     placeholder: string;
     enterToSubmit: boolean;
     isGenerating: boolean;
+    isActionLocked?: boolean;
+    isCancelFinalizing?: boolean;
     isEnhancingPrompt: boolean;
     activePromptTool?: 'image-to-prompt' | 'inspiration' | 'rewrite' | null;
     currentLanguage: Language;
@@ -118,6 +120,8 @@ function ComposerSettingsPanel({
     placeholder,
     enterToSubmit,
     isGenerating,
+    isActionLocked = isGenerating,
+    isCancelFinalizing = false,
     isEnhancingPrompt,
     activePromptTool,
     currentLanguage,
@@ -368,7 +372,7 @@ function ComposerSettingsPanel({
     const primaryGenerateAriaLabel = hasStageSourceForContinuation ? followUpGenerateAriaLabel : generateLabel;
     const primaryGenerateTitle = hasStageSourceForContinuation ? followUpGenerateTitle : undefined;
     const handlePrimaryGenerate = hasStageSourceForContinuation ? onFollowUpGenerate : onGenerate;
-    const showSecondaryGenerateButton = !isGenerating && hasStageSourceForContinuation;
+    const showSecondaryGenerateButton = !isActionLocked && hasStageSourceForContinuation;
     const supportsThinkingLevelControl = capability.thinkingLevels.some((level) => level !== 'disabled');
     const hasGroundingControl = availableGroundingModes.length > 1;
     const sendIntentInfoPanelNode = sendIntentInfoOpen ? (
@@ -706,7 +710,7 @@ function ComposerSettingsPanel({
                                     <button
                                         type="button"
                                         onClick={onStartNewConversation}
-                                        disabled={isGenerating}
+                                        disabled={isActionLocked}
                                         className={newConversationButtonClassName}
                                     >
                                         {t('workspaceViewerNewConversation')}
@@ -831,7 +835,7 @@ function ComposerSettingsPanel({
                                     value={prompt}
                                     onChange={(e) => onPromptChange(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (enterToSubmit && e.key === 'Enter' && !e.shiftKey && !isGenerating) {
+                                        if (enterToSubmit && e.key === 'Enter' && !e.shiftKey && !isActionLocked) {
                                             e.preventDefault();
                                             handlePrimaryGenerate();
                                         }
@@ -881,7 +885,9 @@ function ComposerSettingsPanel({
                                                     : 'text-slate-600 dark:text-slate-500'
                                             }`}
                                         >
-                                            <span className="whitespace-pre-line break-words">{enterBehaviorSendLabel}</span>
+                                            <span className="whitespace-pre-line break-words">
+                                                {enterBehaviorSendLabel}
+                                            </span>
                                         </span>
                                         <span
                                             data-testid="composer-enter-behavior-newline-option"
@@ -893,7 +899,9 @@ function ComposerSettingsPanel({
                                                     : 'text-white dark:text-slate-950'
                                             }`}
                                         >
-                                            <span className="whitespace-pre-line break-words">{enterBehaviorNewlineLabel}</span>
+                                            <span className="whitespace-pre-line break-words">
+                                                {enterBehaviorNewlineLabel}
+                                            </span>
                                         </span>
                                     </button>
                                 </div>
@@ -921,6 +929,15 @@ function ComposerSettingsPanel({
                             >
                                 {t('clearHistoryCancel')}
                             </Button>
+                        ) : isCancelFinalizing ? (
+                            <Button
+                                data-testid="composer-cancel-finalizing-button"
+                                variant="secondary"
+                                disabled
+                                className="min-h-[64px] rounded-[28px] px-4 text-[14px]"
+                            >
+                                {t('composerCancelFinalizingLabel')}
+                            </Button>
                         ) : (
                             <Button
                                 onClick={handlePrimaryGenerate}
@@ -941,6 +958,14 @@ function ComposerSettingsPanel({
                             </Button>
                         ) : null}
                     </div>
+                    {isCancelFinalizing ? (
+                        <p
+                            data-testid="composer-cancel-finalizing-note"
+                            className="px-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400"
+                        >
+                            {t('composerCancelFinalizingNote')}
+                        </p>
+                    ) : null}
                 </div>
             </div>
         </section>

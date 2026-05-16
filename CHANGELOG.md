@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.1 - 2026-05-16
+
+- Canceling a multi-image Lite run now enters a dedicated background finalizing state instead of freezing the whole foreground UI until the canceled batch fully settles.
+- During that finalizing window, prompt editing and generation settings become available again immediately so the next idea can be prepared while the completed result is still being persisted.
+- Fullscreen viewer, history-linked actions, and fresh generation still stay locked until the completed result is formally committed into history, preserving truthful Lite workspace behavior during cancel finalization.
+- The composer now shows an explicit `Finalizing cancelled run` state and note after cancel is accepted, replacing the older still-canceling appearance.
+
 ## v1.1.0 - 2026-05-16
 
 - Multi-image browser generation now unlocks each ready preview tile independently for stage-only preview during generation instead of waiting for the full batch to finish.
