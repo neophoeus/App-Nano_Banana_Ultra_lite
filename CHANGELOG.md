@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.0 - 2026-05-16
+
+- Multi-image browser generation now unlocks each ready preview tile independently for stage-only preview during generation instead of waiting for the full batch to finish.
+- Ready preview tiles shown during generation now stay preview-only, so fullscreen viewer and other history-linked actions remain locked until the batch is actually finalized.
+- Cancel now aborts only unfinished Lite batch slots while preserving already completed results, so canceling after one image is ready no longer leaves a fake running tile or commits a late canceled result afterward.
+- Browser-side Gemini request cancellation now propagates through both blocking and streaming SDK request paths, and batch stagger waits are abortable, so canceled requests stop launching or returning stale late results after cancel.
+
 ## v1.0.1 - 2026-05-15
 
 - Fullscreen viewer metadata now resolves correctly for browser-managed images instead of staying stuck in a loading state.

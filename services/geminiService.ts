@@ -37,6 +37,16 @@ function isAbortLikeError(error: unknown): boolean {
     );
 }
 
+function throwIfAborted(abortSignal?: AbortSignal): void {
+    if (abortSignal?.aborted) {
+        throw new Error('ABORTED');
+    }
+}
+
+function withAbortSignal<T extends { abortSignal?: AbortSignal }>(config: T, abortSignal?: AbortSignal): T {
+    return abortSignal ? { ...config, abortSignal } : config;
+}
+
 async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
     let response: Response;
 
@@ -554,6 +564,7 @@ const buildGenerateResponseFromSdkResponse = async ({
     extracted,
     imgIndex,
     onLog,
+    abortSignal,
 }: {
     options: GenerateOptions;
     prepared: PreparedBrowserGenerateRequest;
@@ -561,7 +572,10 @@ const buildGenerateResponseFromSdkResponse = async ({
     extracted: ReturnType<typeof extractGeneratedContent>;
     imgIndex: number;
     onLog?: (msg: string) => void;
+    abortSignal?: AbortSignal;
 }): Promise<GenerateResponse> => {
+    throwIfAborted(abortSignal);
+
     const groundingDetails = extractGroundingDetails(sdkResponse || {});
     const actualOutput = extracted.imageUrl
         ? await loadImageDimensions(extracted.imageUrl)
@@ -572,6 +586,8 @@ const buildGenerateResponseFromSdkResponse = async ({
               }))
               .catch(() => null)
         : null;
+
+    throwIfAborted(abortSignal);
 
     if (!extracted.imageUrl) {
         const failure = resolveGenerationFailureInfo({
@@ -653,6 +669,7 @@ const buildGenerateResponseFromSdkResponse = async ({
         },
     };
 
+    throwIfAborted(abortSignal);
     onLog?.(`Image #${imgIndex}: Success.`);
     return response;
 };
@@ -911,20 +928,23 @@ const generateSingleImageStream = async (
     try {
         onLog?.(`Image #${imgIndex}: Opening live progress stream...`);
         const prepared = await prepareBrowserGenerateRequest(options, imgIndex, onLog, abortSignal);
+        const requestConfig = withAbortSignal(prepared.requestConfig, abortSignal);
+        throwIfAborted(abortSignal);
         const stream = prepared.useOfficialConversation
             ? await prepared.ai.chats
                   .create({
                       model: options.model,
-                      config: prepared.requestConfig,
+                      config: requestConfig,
                       history: prepared.conversationHistoryResult.history,
                   })
                   .sendMessageStream({
                       message: prepared.parts,
+                      config: requestConfig,
                   })
             : await prepared.ai.models.generateContentStream({
                   model: options.model,
                   contents: { parts: prepared.parts },
-                  config: prepared.requestConfig,
+                  config: requestConfig,
               });
 
         transportOpened = true;
@@ -940,6 +960,7 @@ const generateSingleImageStream = async (
         );
 
         for await (const chunk of stream) {
+            throwIfAborted(abortSignal);
             lastChunk = chunk;
 
             const applied = applyBrowserStreamChunkToAccumulator(streamState, chunk);
@@ -963,6 +984,8 @@ const generateSingleImageStream = async (
             throw new Error('Streaming response completed without a final payload.');
         }
 
+        throwIfAborted(abortSignal);
+
         finalResponse = await buildGenerateResponseFromSdkResponse({
             options,
             prepared,
@@ -970,6 +993,7 @@ const generateSingleImageStream = async (
             extracted: buildCompletedBrowserStreamExtraction(streamState, lastChunk),
             imgIndex,
             onLog,
+            abortSignal,
         });
 
         const summary = buildBrowserLiveProgressSummary(streamState, Boolean(finalResponse.imageUrl), transportOpened);
@@ -1249,21 +1273,26 @@ const generateSingleImage = async (
     try {
         onLog?.(`Image #${imgIndex}: Sending request...`);
         const prepared = await prepareBrowserGenerateRequest(options, imgIndex, onLog, abortSignal);
+        const requestConfig = withAbortSignal(prepared.requestConfig, abortSignal);
+        throwIfAborted(abortSignal);
         const sdkResponse = prepared.useOfficialConversation
             ? await prepared.ai.chats
                   .create({
                       model: options.model,
-                      config: prepared.requestConfig,
+                      config: requestConfig,
                       history: prepared.conversationHistoryResult.history,
                   })
                   .sendMessage({
                       message: prepared.parts,
+                      config: requestConfig,
                   })
             : await prepared.ai.models.generateContent({
                   model: options.model,
                   contents: { parts: prepared.parts },
-                  config: prepared.requestConfig,
+                  config: requestConfig,
               });
+
+        throwIfAborted(abortSignal);
 
         return await buildGenerateResponseFromSdkResponse({
             options,
@@ -1272,6 +1301,7 @@ const generateSingleImage = async (
             extracted: extractGeneratedContent(sdkResponse),
             imgIndex,
             onLog,
+            abortSignal,
         });
     } catch (error: any) {
         if (isAbortLikeError(error)) {
@@ -1515,7 +1545,23 @@ export const generateImageWithGemini = async (
 
     const promises = Array.from({ length: batchSize }).map(async (_, index): Promise<InitialBatchAttemptOutcome> => {
         // Stagger delay
-        if (index > 0) await new Promise((resolve) => setTimeout(resolve, index * STAGGER_DELAY_MS));
+        if (index > 0) {
+            try {
+                await delayWithAbort(index * STAGGER_DELAY_MS, abortSignal);
+            } catch (error) {
+                return {
+                    result: finalizeBatchResult({
+                        slotIndex: index,
+                        status: 'failed',
+                        error:
+                            error instanceof Error && error.message === 'ABORTED'
+                                ? 'Generation cancelled'
+                                : String(error),
+                    }),
+                    needsRecovery: false,
+                };
+            }
+        }
 
         // F1: Check abort before starting each image
         if (abortSignal?.aborted) {

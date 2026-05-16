@@ -609,11 +609,13 @@ const App: React.FC<AppProps> = ({
                 id: sessionId,
                 batchSize,
                 didUserInspectExistingImage: false,
+                selectedPreviewSlotIndex: null,
                 tiles: Array.from({ length: batchSize }, (_, slotIndex) => ({
                     id: `${sessionId}-${slotIndex}`,
                     slotIndex,
                     status: 'pending',
                     previewUrl: null,
+                    stagePreviewUrl: null,
                     error: null,
                 })),
             });
@@ -649,6 +651,20 @@ const App: React.FC<AppProps> = ({
             setActiveBatchPreviewSession(null);
 
             if (currentPreviewSession.didUserInspectExistingImage) {
+                const selectedPreviewSlotIndex = currentPreviewSession.selectedPreviewSlotIndex;
+                if (typeof selectedPreviewSlotIndex === 'number') {
+                    const selectedCommittedItem = historyItems.find(
+                        (historyItem) =>
+                            historyItem.status === 'success' &&
+                            getBatchVisualSlotIndex(historyItem) === selectedPreviewSlotIndex &&
+                            (historyItem.savedFilename || historyItem.url),
+                    );
+
+                    if (selectedCommittedItem) {
+                        silentlyShowHistoryItemOnStage(selectedCommittedItem);
+                    }
+                }
+
                 return;
             }
 
@@ -674,6 +690,35 @@ const App: React.FC<AppProps> = ({
     const handleBatchPreviewClear = useCallback(({ sessionId }: { sessionId: string }) => {
         setActiveBatchPreviewSession((previousSession) => (previousSession?.id === sessionId ? null : previousSession));
     }, []);
+
+    const handleBatchPreviewTileSelect = useCallback(
+        (tile: BatchPreviewSession['tiles'][number]) => {
+            if (tile.status !== 'ready') {
+                return;
+            }
+
+            const stagePreviewUrl = tile.stagePreviewUrl || tile.previewUrl;
+            if (!stagePreviewUrl) {
+                return;
+            }
+
+            setActiveBatchPreviewSession((previousSession) =>
+                previousSession
+                    ? {
+                          ...previousSession,
+                          didUserInspectExistingImage: true,
+                          selectedPreviewSlotIndex: tile.slotIndex,
+                      }
+                    : previousSession,
+            );
+            setGeneratedImageUrls([stagePreviewUrl]);
+            setSelectedImageIndex(0);
+            clearAssetRoles(['stage-source']);
+            resetSelectedOutputState();
+            setError(null);
+        },
+        [clearAssetRoles, resetSelectedOutputState, setError, setGeneratedImageUrls, setSelectedImageIndex],
+    );
 
     const handleLiveProgressReset = useCallback(() => {
         setActiveLiveProgressSession(null);
@@ -763,6 +808,7 @@ const App: React.FC<AppProps> = ({
                 ? {
                       ...previousSession,
                       didUserInspectExistingImage: true,
+                      selectedPreviewSlotIndex: null,
                   }
                 : previousSession,
         );
@@ -2026,6 +2072,8 @@ const App: React.FC<AppProps> = ({
                 currentLanguage={currentLang}
                 history={history}
                 previewTiles={activeBatchPreviewSession?.tiles || []}
+                selectedPreviewSlotIndex={activeBatchPreviewSession?.selectedPreviewSlotIndex ?? null}
+                onPreviewTileSelect={handleBatchPreviewTileSelect}
                 selectedHistoryId={selectedHistoryId}
                 currentSourceHistoryId={currentSourceHistoryId}
                 activeBranchSummary={activeBranchSummary}
@@ -2046,6 +2094,7 @@ const App: React.FC<AppProps> = ({
             currentLang,
             getBranchAccentClassName,
             handleExportWorkspaceSnapshot,
+            handleBatchPreviewTileSelect,
             handleOpenClearWorkspaceConfirm,
             handleHistorySelect,
             handleOpenVersionsDetails,

@@ -12,7 +12,7 @@ It keeps the fast local workspace flow for Gemini image generation, references, 
 
 Nano Banana Ultra _lite_ is intended to run inside Google AI Studio. Gemini API access comes from the AI Studio environment automatically; _lite_ does not support manual browser API-key entry or a separate local standalone key flow.
 
-## Lite v1.0 Scope
+## Lite v1.1 Scope
 
 - browser-only React + Vite frontend
 - prompt-based image generation with model, ratio, size, and style controls
@@ -37,7 +37,7 @@ Use _lite_ when you want the simpler browser-first frontend experience with a sm
 
 ## Version
 
-Current Lite release: `v1.0.0`
+Current Lite release: `v1.1.0`
 
 Release notes: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -79,7 +79,7 @@ Nano Banana Ultra _lite_ 是 [App-Nano_Banana_Ultra](https://github.com/neophoeu
 
 _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環境自動提供；_lite_ 不支援手動在瀏覽器輸入 API key，也不提供獨立本機 key 流程。
 
-## Lite v1.0 範圍
+## Lite v1.1 範圍
 
 - 以 React + Vite 為基礎的純前端瀏覽器版
 - 保留提示詞生成、模型/比例/尺寸/風格控制
@@ -104,7 +104,7 @@ _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環
 
 ## 版本
 
-目前 Lite 版本：`v1.0.1`
+目前 Lite 版本：`v1.1.0`
 
 版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
 
