@@ -1,5 +1,12 @@
 import { GoogleGenAI } from '@google/genai';
-import { GenerateOptions, GenerateResponse, ImageReceivedResult, ResultPart } from '../types';
+import {
+    GenerateOptions,
+    GenerateResponse,
+    ImageReceivedResult,
+    ResultImagePart,
+    ResultPart,
+    ResultTextPart,
+} from '../types';
 import {
     buildImageToPromptInstruction,
     buildPromptEnhancerInstruction,
@@ -16,12 +23,7 @@ import {
 } from '../utils/generationFailure';
 import { buildBrowserConversationHistory, buildBrowserGenerateParts } from '../utils/browserGeminiParts';
 import { extractGeneratedContent } from '../utils/geminiResponseExtraction';
-import {
-    isLiveProgressFanOutEligibleRequest,
-    isLiveProgressEligibleRequest,
-    LiveProgressStreamTruthSummary,
-    summarizeLiveProgressTruthfulness,
-} from '../utils/liveProgressCapabilities';
+import { LiveProgressStreamTruthSummary, summarizeLiveProgressTruthfulness } from '../utils/liveProgressCapabilities';
 import { hasConfiguredGeminiApiKey, promptForGeminiApiKey, resolveGeminiApiKey } from '../utils/geminiCredentials';
 import { loadImageDimensions } from '../utils/imageSaveUtils';
 import { buildStyleAwareImagePrompt } from '../utils/stylePromptBuilder';
@@ -55,17 +57,7 @@ async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promi
         response = await fetch(input, init);
     } catch (error) {
         if (isAbortLikeError(error)) {
-            const abortError = new Error('ABORTED');
-            emitGenerationDebugEvent({
-                kind: 'error',
-                label: `Image #${imgIndex}: Stream aborted`,
-                summary: buildErrorSummary(abortError),
-                requestId: prepared?.debugRequestId,
-                sessionId: streamSessionId,
-                slotIndex: eventContext?.slotIndex,
-                payload: { error: abortError },
-            });
-            throw abortError;
+            throw new Error('ABORTED');
         }
         throw error;
     }
@@ -276,7 +268,7 @@ const summarizeResultParts = (parts: ResultPart[]) => {
     const outputTextParts: string[] = [];
     const thoughtTextParts: string[] = [];
     const imageParts = parts.filter(isImageResultPart);
-    const outputImageParts = imageParts.filter((part) => part.kind === 'output-image');
+    const outputImageParts = imageParts.filter(isOutputImageResultPart);
     let selectedOutputImage: (ResultImagePart & { kind: 'output-image' }) | undefined;
 
     outputImageParts.forEach((candidate) => {
@@ -838,26 +830,6 @@ const delayWithAbort = async (delayMs: number, abortSignal?: AbortSignal): Promi
         }
     });
 };
-
-const shouldUseLiveProgressStream = (options: GenerateOptions, batchSize: number): boolean =>
-    isLiveProgressEligibleRequest({
-        model: options.model,
-        executionMode: options.executionMode || 'single-turn',
-        outputFormat: options.outputFormat || 'images-only',
-        thinkingLevel: options.thinkingLevel || 'disabled',
-        includeThoughts: Boolean(options.includeThoughts),
-        batchSize,
-    });
-
-const shouldUseLiveProgressFanOut = (options: GenerateOptions, batchSize: number): boolean =>
-    isLiveProgressFanOutEligibleRequest({
-        model: options.model,
-        executionMode: options.executionMode || 'single-turn',
-        outputFormat: options.outputFormat || 'images-only',
-        thinkingLevel: options.thinkingLevel || 'disabled',
-        includeThoughts: Boolean(options.includeThoughts),
-        batchSize,
-    });
 
 const isRetryableImageAbsenceFailure = (failure?: GenerateResponse['failure']): boolean =>
     failure?.code === 'no-image-data' || failure?.code === 'text-only';
@@ -1812,96 +1784,6 @@ export const generateImageWithGemini = async (
             });
             throw error;
         }
-    }
-
-    if (batchSize === 1 && shouldUseLiveProgressStream(options, batchSize)) {
-        const singleResult = await executeInteractiveStreamSlot(
-            options,
-            0,
-            onImageReceived,
-            onLog,
-            abortSignal,
-            onLiveProgressEvent,
-        );
-
-        onProgress?.(1, 1);
-        onResult?.(singleResult);
-        return [singleResult];
-    }
-
-    if (batchSize > 1 && shouldUseLiveProgressFanOut(options, batchSize)) {
-        const STREAM_FAN_OUT_CONCURRENCY = 2;
-        const STREAM_FAN_OUT_STAGGER_MS = 150;
-        const streamBatchSessionId = options.liveProgressBatchSessionId || crypto.randomUUID();
-        const streamOptions: GenerateOptions = {
-            ...options,
-            executionMode: 'single-turn',
-        };
-        const results = new Array<GenerationResult>(batchSize);
-        let completedCount = 0;
-        let nextSlotIndex = 0;
-
-        const finalizeFanOutResult = (result: GenerationResult): GenerationResult => {
-            completedCount += 1;
-            onProgress?.(completedCount, batchSize);
-            onResult?.(result);
-            return result;
-        };
-
-        const runNextSlot = async (): Promise<void> => {
-            const slotIndex = nextSlotIndex;
-            nextSlotIndex += 1;
-
-            if (slotIndex >= batchSize) {
-                return;
-            }
-
-            try {
-                await delayWithAbort(slotIndex * STREAM_FAN_OUT_STAGGER_MS, abortSignal);
-            } catch (error) {
-                results[slotIndex] = finalizeFanOutResult({
-                    slotIndex,
-                    status: 'failed',
-                    error:
-                        error instanceof Error && error.message === 'ABORTED' ? 'Generation cancelled' : String(error),
-                });
-                await runNextSlot();
-                return;
-            }
-
-            if (abortSignal?.aborted) {
-                results[slotIndex] = finalizeFanOutResult({
-                    slotIndex,
-                    status: 'failed',
-                    error: 'Generation cancelled',
-                });
-                await runNextSlot();
-                return;
-            }
-
-            const slotResult = await executeInteractiveStreamSlot(
-                streamOptions,
-                slotIndex,
-                onImageReceived,
-                onLog,
-                abortSignal,
-                onLiveProgressEvent,
-                {
-                    slotIndex,
-                    batchSessionId: streamBatchSessionId,
-                },
-            );
-            results[slotIndex] = finalizeFanOutResult(slotResult);
-            await runNextSlot();
-        };
-
-        await Promise.all(
-            Array.from({ length: Math.min(STREAM_FAN_OUT_CONCURRENCY, batchSize) }, async () => {
-                await runNextSlot();
-            }),
-        );
-
-        return results;
     }
 
     // PARALLEL EXECUTION WITH STAGGER
