@@ -99,6 +99,9 @@ export const ja = {
     statusPanelLive: '稼働中',
     statusPanelHealthFailed: 'ヘルスチェックに失敗しました',
     statusGenerating: '描画中…',
+    composerCancelFinalizingLabel: 'キャンセル済み実行を整理中',
+    composerCancelFinalizingNote:
+        '完了済みの画像は引き続きバックグラウンドで履歴へ書き込まれます。生成操作が再び有効になるまでの間に、次のプロンプトを準備できます。',
     statusProcessing: '処理中...',
     statusScanning: 'スキャン中...',
     statusInitializing: '準備中...',
@@ -439,6 +442,17 @@ export const ja = {
         '1.0 を超えると変化や意外性が増えますが、一貫性やプロンプト忠実度は下がることがあります。',
     composerAdvancedTemperatureGuideLower:
         '1.0 未満にすると結果はより安定して字義どおりになりやすい一方、探索性は下がります。',
+    composerAdvancedSafetyTitle: '安全フィルター',
+    composerAdvancedSafetyNote:
+        'モデル既定では、そのカテゴリを Gemini safetySettings から省略します。現在の製品既定は 4 カテゴリすべてを「遮断なし」のまま維持します。',
+    composerAdvancedSafetyAllLabel: '全カテゴリ',
+    composerAdvancedSafetyMixed: '混在',
+    composerAdvancedSafetyThresholdDefault: 'モデル既定',
+    composerAdvancedSafetyThresholdOff: 'オフ',
+    composerAdvancedSafetyThresholdBlockNone: '遮断なし',
+    composerAdvancedSafetyThresholdBlockOnlyHigh: '高のみ',
+    composerAdvancedSafetyThresholdBlockMediumAndAbove: '中以上',
+    composerAdvancedSafetyThresholdBlockLowAndAbove: '低以上',
     surfaceSharedControlsBadge: '共有',
     surfaceSharedControlsSettingsTitle: '設定',
     surfaceSharedControlsOpen: '共有コントロールを開く',

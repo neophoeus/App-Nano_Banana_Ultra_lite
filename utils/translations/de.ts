@@ -102,6 +102,9 @@ export const de = {
     statusPanelLive: 'Aktiv',
     statusPanelHealthFailed: 'Health-Check fehlgeschlagen',
     statusGenerating: 'Generiere...',
+    composerCancelFinalizingLabel: 'Abgebrochenen Lauf abschliessen',
+    composerCancelFinalizingNote:
+        'Abgeschlossene Bilder werden im Hintergrund weiter in den Verlauf geschrieben. Du kannst den naechsten Prompt schon vorbereiten, waehrend Generierungsaktionen noch gesperrt bleiben.',
     statusProcessing: 'Verarbeite...',
     statusScanning: 'Scannen...',
     statusInitializing: 'Aufwärmen...',
@@ -452,6 +455,17 @@ export const de = {
         'Oberhalb von 1.0 steigen Variation und Uberraschung, aber Konsistenz und Prompt-Treue konnen sinken.',
     composerAdvancedTemperatureGuideLower:
         'Unterhalb von 1.0 werden Ergebnisse stabiler und wortlicher, sind aber meist weniger explorativ.',
+    composerAdvancedSafetyTitle: 'Sicherheitsfilter',
+    composerAdvancedSafetyNote:
+        'Modellstandard lasst diese Kategorie in Gemini safetySettings weg. Die aktuelle Produktvorgabe halt alle vier Filter weiter auf Keine Blockierung.',
+    composerAdvancedSafetyAllLabel: 'Alle Kategorien',
+    composerAdvancedSafetyMixed: 'Gemischt',
+    composerAdvancedSafetyThresholdDefault: 'Modell',
+    composerAdvancedSafetyThresholdOff: 'Aus',
+    composerAdvancedSafetyThresholdBlockNone: 'Keine',
+    composerAdvancedSafetyThresholdBlockOnlyHigh: 'Nur hoch',
+    composerAdvancedSafetyThresholdBlockMediumAndAbove: 'Mittel+',
+    composerAdvancedSafetyThresholdBlockLowAndAbove: 'Niedrig+',
     surfaceSharedControlsBadge: 'Gemeinsam',
     surfaceSharedControlsSettingsTitle: 'Einstellungen',
     surfaceSharedControlsOpen: 'Gemeinsame Steuerung offnen',

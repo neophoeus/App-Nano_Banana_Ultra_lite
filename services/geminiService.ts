@@ -1,11 +1,13 @@
 import { GoogleGenAI } from '@google/genai';
 import {
+    DEFAULT_SAFETY_THRESHOLDS,
     GenerateOptions,
     GenerateResponse,
     ImageReceivedResult,
     ResultImagePart,
     ResultPart,
     ResultTextPart,
+    type SafetyThresholds,
 } from '../types';
 import {
     buildImageToPromptInstruction,
@@ -13,8 +15,8 @@ import {
     buildRandomPromptInstruction,
     buildRandomPromptRequest,
     normalizePromptToolLanguage,
-    PERMISSIVE_SAFETY_SETTINGS,
 } from '../utils/geminiPromptHelpers';
+import { buildSafetySettings } from '../utils/geminiApiConfig';
 import {
     attachGenerationFailure,
     getGenerationFailure,
@@ -162,6 +164,7 @@ type PreparedBrowserGenerateRequest = {
         includeThoughts: GenerateOptions['includeThoughts'];
         googleSearch: GenerateOptions['googleSearch'];
         imageSearch: GenerateOptions['imageSearch'];
+        safetyThresholds: GenerateOptions['safetyThresholds'];
         executionMode: GenerateOptions['executionMode'];
         conversationContext: GenerateOptions['conversationContext'];
     };
@@ -198,9 +201,17 @@ type BrowserOnlyTestGenerateImageContext = {
 };
 
 type BrowserOnlyTestGeminiServiceOverrides = {
-    enhancePromptWithGemini?: (currentPrompt: string, lang: Language) => Promise<string> | string;
-    generateRandomPrompt?: (lang: Language) => Promise<string> | string;
-    generatePromptFromImage?: (imageDataUrl: string, lang: Language) => Promise<string> | string;
+    enhancePromptWithGemini?: (
+        currentPrompt: string,
+        lang: Language,
+        safetyThresholds: Partial<SafetyThresholds>,
+    ) => Promise<string> | string;
+    generateRandomPrompt?: (lang: Language, safetyThresholds: Partial<SafetyThresholds>) => Promise<string> | string;
+    generatePromptFromImage?: (
+        imageDataUrl: string,
+        lang: Language,
+        safetyThresholds: Partial<SafetyThresholds>,
+    ) => Promise<string> | string;
     generateImageWithGemini?: (
         options: GenerateOptions,
         context: BrowserOnlyTestGenerateImageContext,
@@ -593,6 +604,7 @@ const prepareBrowserGenerateRequest = async (
         includeThoughts: options.includeThoughts,
         googleSearch: options.googleSearch,
         imageSearch: options.imageSearch,
+        safetyThresholds: options.safetyThresholds,
         executionMode: options.executionMode,
         conversationContext: options.conversationContext,
     };
@@ -1310,19 +1322,24 @@ export const promptForApiKey = async (): Promise<void> => {
 
 // --- Text Utilities (Prompt Engineering) ---
 
-export const enhancePromptWithGemini = async (currentPrompt: string, lang: Language): Promise<string> => {
+export const enhancePromptWithGemini = async (
+    currentPrompt: string,
+    lang: Language,
+    safetyThresholds: Partial<SafetyThresholds> = DEFAULT_SAFETY_THRESHOLDS,
+): Promise<string> => {
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.enhancePromptWithGemini;
     if (testOverride) {
-        return await testOverride(currentPrompt, lang);
+        return await testOverride(currentPrompt, lang, safetyThresholds);
     }
 
     const normalizedLanguage = normalizePromptToolLanguage(lang);
     const requestId = createDebugRequestId();
+    const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: buildPromptEnhancerInstruction(normalizedLanguage),
-            safetySettings: PERMISSIVE_SAFETY_SETTINGS,
+            ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
             temperature: 0.35,
         },
         contents:
@@ -1369,19 +1386,23 @@ export const enhancePromptWithGemini = async (currentPrompt: string, lang: Langu
     }
 };
 
-export const generateRandomPrompt = async (lang: Language): Promise<string> => {
+export const generateRandomPrompt = async (
+    lang: Language,
+    safetyThresholds: Partial<SafetyThresholds> = DEFAULT_SAFETY_THRESHOLDS,
+): Promise<string> => {
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateRandomPrompt;
     if (testOverride) {
-        return await testOverride(lang);
+        return await testOverride(lang, safetyThresholds);
     }
 
     const normalizedLanguage = normalizePromptToolLanguage(lang);
     const requestId = createDebugRequestId();
+    const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: buildRandomPromptInstruction(normalizedLanguage),
-            safetySettings: PERMISSIVE_SAFETY_SETTINGS,
+            ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
             temperature: 0.7,
         },
         contents: buildRandomPromptRequest(),
@@ -1426,10 +1447,14 @@ export const generateRandomPrompt = async (lang: Language): Promise<string> => {
     }
 };
 
-export const generatePromptFromImage = async (imageDataUrl: string, lang: Language): Promise<string> => {
+export const generatePromptFromImage = async (
+    imageDataUrl: string,
+    lang: Language,
+    safetyThresholds: Partial<SafetyThresholds> = DEFAULT_SAFETY_THRESHOLDS,
+): Promise<string> => {
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generatePromptFromImage;
     if (testOverride) {
-        return await testOverride(imageDataUrl, lang);
+        return await testOverride(imageDataUrl, lang, safetyThresholds);
     }
 
     const normalizedLanguage = normalizePromptToolLanguage(lang);
@@ -1438,11 +1463,12 @@ export const generatePromptFromImage = async (imageDataUrl: string, lang: Langua
         throw new Error('A valid image data URL is required.');
     }
     const requestId = createDebugRequestId();
+    const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: buildImageToPromptInstruction(normalizedLanguage),
-            safetySettings: PERMISSIVE_SAFETY_SETTINGS,
+            ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
             temperature: 0.25,
         },
         contents: [

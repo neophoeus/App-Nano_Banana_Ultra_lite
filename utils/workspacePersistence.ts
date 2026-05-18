@@ -2,9 +2,13 @@ import {
     BranchContinuationSourceByOriginId,
     BranchNameOverrides,
     BranchConversationRecord,
+    DEFAULT_SAFETY_THRESHOLDS,
     GeneratedImage,
     GenerationFailureExtractionIssue,
     ResultPart,
+    SAFETY_CATEGORY_KEYS,
+    SAFETY_THRESHOLD_KEYS,
+    SafetyThresholdKey,
     StageAsset,
     WorkspaceBranchState,
     WorkspaceComposerState,
@@ -82,6 +86,7 @@ export const EMPTY_WORKSPACE_COMPOSER_STATE: WorkspaceComposerState = {
     includeThoughts: true,
     googleSearch: false,
     imageSearch: false,
+    safetyThresholds: { ...DEFAULT_SAFETY_THRESHOLDS },
     stickySendIntent: 'independent',
     generationMode: 'Text to Image',
     executionMode: 'single-turn',
@@ -135,6 +140,7 @@ const IMAGE_MODEL_VALUES = new Set<GeneratedImage['model']>([
 ]);
 const OUTPUT_FORMAT_VALUES = new Set<WorkspaceComposerState['outputFormat']>(['images-only', 'images-and-text']);
 const THINKING_LEVEL_VALUES = new Set<WorkspaceComposerState['thinkingLevel']>(['disabled', 'minimal', 'high']);
+const SAFETY_THRESHOLD_VALUES = new Set<SafetyThresholdKey>(SAFETY_THRESHOLD_KEYS);
 const EXECUTION_MODE_VALUES = new Set<NonNullable<GeneratedImage['executionMode']>>([
     'single-turn',
     'interactive-batch-variants',
@@ -166,6 +172,8 @@ const isOutputFormat = (value: unknown): value is WorkspaceComposerState['output
     typeof value === 'string' && OUTPUT_FORMAT_VALUES.has(value as WorkspaceComposerState['outputFormat']);
 const isThinkingLevel = (value: unknown): value is WorkspaceComposerState['thinkingLevel'] =>
     typeof value === 'string' && THINKING_LEVEL_VALUES.has(value as WorkspaceComposerState['thinkingLevel']);
+const isSafetyThresholdKey = (value: unknown): value is SafetyThresholdKey =>
+    typeof value === 'string' && SAFETY_THRESHOLD_VALUES.has(value as SafetyThresholdKey);
 const isExecutionMode = (value: unknown): value is NonNullable<GeneratedImage['executionMode']> =>
     typeof value === 'string' && EXECUTION_MODE_VALUES.has(value as NonNullable<GeneratedImage['executionMode']>);
 const isStageAssetRole = (value: unknown): value is StageAsset['role'] =>
@@ -946,6 +954,16 @@ const sanitizeWorkspaceComposerState = (value: unknown): WorkspaceComposerState 
         return EMPTY_WORKSPACE_COMPOSER_STATE;
     }
 
+    const normalizedSafetyThresholds = { ...DEFAULT_SAFETY_THRESHOLDS };
+    if (isRecord(value.safetyThresholds)) {
+        SAFETY_CATEGORY_KEYS.forEach((categoryKey) => {
+            const threshold = value.safetyThresholds[categoryKey];
+            if (isSafetyThresholdKey(threshold)) {
+                normalizedSafetyThresholds[categoryKey] = threshold;
+            }
+        });
+    }
+
     return {
         ...EMPTY_WORKSPACE_COMPOSER_STATE,
         ...value,
@@ -963,6 +981,7 @@ const sanitizeWorkspaceComposerState = (value: unknown): WorkspaceComposerState 
         includeThoughts: Boolean(value.includeThoughts),
         googleSearch: Boolean(value.googleSearch),
         imageSearch: Boolean(value.imageSearch),
+        safetyThresholds: normalizedSafetyThresholds,
         stickySendIntent:
             value.stickySendIntent === 'memory' || value.stickySendIntent === 'independent'
                 ? value.stickySendIntent

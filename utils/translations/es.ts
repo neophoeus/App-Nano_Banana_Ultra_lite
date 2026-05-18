@@ -101,6 +101,9 @@ export const es = {
     statusPanelLive: 'Activo',
     statusPanelHealthFailed: 'Falló la comprobación de estado',
     statusGenerating: 'Generando...',
+    composerCancelFinalizingLabel: 'Finalizando la ejecución cancelada',
+    composerCancelFinalizingNote:
+        'Las imágenes completadas todavía se están escribiendo en el historial en segundo plano. Puedes ir preparando el siguiente prompt mientras las acciones de generación siguen bloqueadas.',
     statusProcessing: 'Procesando...',
     statusScanning: 'Escaneando...',
     statusInitializing: 'Calentando motores...',
@@ -449,6 +452,17 @@ export const es = {
         'Por encima de 1.0 aumenta la variacion y la sorpresa, pero puede reducir la consistencia y la fidelidad al prompt.',
     composerAdvancedTemperatureGuideLower:
         'Por debajo de 1.0 hace los resultados mas estables y literales, pero normalmente menos exploratorios.',
+    composerAdvancedSafetyTitle: 'Filtros de seguridad',
+    composerAdvancedSafetyNote:
+        'Predeterminado del modelo omite esta categoria de Gemini safetySettings. La configuracion actual de la app mantiene los cuatro filtros en Sin bloqueo.',
+    composerAdvancedSafetyAllLabel: 'Todas las categorias',
+    composerAdvancedSafetyMixed: 'Mixto',
+    composerAdvancedSafetyThresholdDefault: 'Modelo',
+    composerAdvancedSafetyThresholdOff: 'Desactivado',
+    composerAdvancedSafetyThresholdBlockNone: 'Sin bloqueo',
+    composerAdvancedSafetyThresholdBlockOnlyHigh: 'Solo alto',
+    composerAdvancedSafetyThresholdBlockMediumAndAbove: 'Medio+',
+    composerAdvancedSafetyThresholdBlockLowAndAbove: 'Bajo+',
     surfaceSharedControlsBadge: 'Compartido',
     surfaceSharedControlsSettingsTitle: 'Ajustes',
     surfaceSharedControlsOpen: 'Abrir controles compartidos',

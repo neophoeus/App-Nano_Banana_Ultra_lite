@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.0 - 2026-05-18
+
+- Added adjustable Gemini safety filters inside Lite Advanced Settings for the four officially supported safety categories: harassment, hate speech, sexually explicit, and dangerous content.
+- Each safety category now supports the official threshold set through slider controls, including model default, off, block none, block only high, block medium and above, and block low and above.
+- Moved the Safety filters card under Grounding mode in the right-side Advanced Settings column so the control stays available without becoming a noisy primary setting.
+- Added a sync-all safety slider that can align all four safety categories in one move while still allowing per-category overrides afterward.
+- Lite generation settings and prompt-helper flows now apply the same selected safety thresholds consistently instead of relying on a separate hidden default.
+
 ## v1.2.1 - 2026-05-18
 
 - Lite AI Studio image generation now stays on blocking Gemini requests for both single-image and multi-image runs, instead of opening live-progress streams that can fail under AI Studio permission limits.
