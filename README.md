@@ -14,7 +14,7 @@ Nano Banana Ultra _lite_ is intended to run inside Google AI Studio. Gemini API 
 
 Inside AI Studio, _lite_ uses blocking Gemini image-generation requests instead of browser live-progress streams. When the final response includes visible thought text or thought images, _lite_ extracts those artifacts from the final payload; hidden thought signatures are kept as continuity metadata and are not displayed as visible thoughts.
 
-## Lite v1.1 Scope
+## Lite Scope
 
 - browser-only React + Vite frontend
 - prompt-based image generation with model, ratio, size, and style controls
@@ -40,7 +40,7 @@ Use _lite_ when you want the simpler browser-first frontend experience with a sm
 
 ## Version
 
-Current Lite release: `v1.1.4`
+Current Lite release: `v1.2.1`
 
 Release notes: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -84,7 +84,7 @@ _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環
 
 在 AI Studio 中，_lite_ 會使用 blocking Gemini 影像生成請求，不開啟瀏覽器 live-progress stream。當 final response 內含可見 thought 文字或 thought image 時，_lite_ 會從最後 payload 擷取；hidden thought signature 只作為 continuity metadata 保存，不當成可見思考顯示。
 
-## Lite v1.1 範圍
+## Lite 範圍
 
 - 以 React + Vite 為基礎的純前端瀏覽器版
 - 保留提示詞生成、模型/比例/尺寸/風格控制
@@ -110,7 +110,7 @@ _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環
 
 ## 版本
 
-目前 Lite 版本：`v1.1.4`
+目前 Lite 版本：`v1.2.1`
 
 版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
 
