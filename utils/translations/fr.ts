@@ -80,7 +80,7 @@ export const fr = {
     debugTerminalEyebrow: 'Surface de diagnostic cachee',
     debugTerminalTitle: 'Terminal de debug',
     debugTerminalDescription:
-        'Inspecte les requetes Gemini sanitisees, les fragments de flux, les reponses du modele, les nouvelles tentatives et les erreurs sans exposer de cle API ni les octets image bruts.',
+        'Inspecte les requetes Gemini sanitisees, les parties du resultat final, les reponses du modele, les nouvelles tentatives et les erreurs sans exposer de cle API ni les octets image bruts.',
     debugTerminalEventCount: '{0} evenements au total',
     debugTerminalFilteredCount: '{0} visibles',
     debugTerminalClear: 'Effacer',

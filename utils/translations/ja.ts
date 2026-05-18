@@ -78,7 +78,7 @@ export const ja = {
     debugTerminalEyebrow: '隠し診断サーフェス',
     debugTerminalTitle: 'デバッグターミナル',
     debugTerminalDescription:
-        'API キーや生の画像バイトを露出させずに、サニタイズ済みの Gemini リクエスト、ストリーム断片、モデル応答、再試行、失敗内容を確認できます。',
+        'API キーや生の画像バイトを露出させずに、サニタイズ済みの Gemini リクエスト、最終結果パーツ、モデル応答、再試行、失敗内容を確認できます。',
     debugTerminalEventCount: '{0} 件のイベント',
     debugTerminalFilteredCount: '表示中 {0} 件',
     debugTerminalClear: 'クリア',

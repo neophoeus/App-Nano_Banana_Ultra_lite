@@ -80,7 +80,7 @@ export const ru = {
     debugTerminalEyebrow: 'Скрытая диагностическая панель',
     debugTerminalTitle: 'Терминал отладки',
     debugTerminalDescription:
-        'Просматривайте очищенные запросы Gemini, фрагменты стрима, ответы модели, повторы и ошибки без показа API-ключей или сырых байтов изображения.',
+        'Просматривайте очищенные запросы Gemini, итоговые части результата, ответы модели, повторы и ошибки без показа API-ключей или сырых байтов изображения.',
     debugTerminalEventCount: 'Всего событий: {0}',
     debugTerminalFilteredCount: 'Показано: {0}',
     debugTerminalClear: 'Очистить',

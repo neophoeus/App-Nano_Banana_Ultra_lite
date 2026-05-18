@@ -80,7 +80,7 @@ export const es = {
     debugTerminalEyebrow: 'Superficie de diagnostico oculta',
     debugTerminalTitle: 'Terminal de depuracion',
     debugTerminalDescription:
-        'Inspecciona solicitudes Gemini saneadas, fragmentos de streaming, respuestas del modelo, reintentos y errores sin exponer claves API ni bytes de imagen sin procesar.',
+        'Inspecciona solicitudes Gemini saneadas, partes finales del resultado, respuestas del modelo, reintentos y errores sin exponer claves API ni bytes de imagen sin procesar.',
     debugTerminalEventCount: '{0} eventos totales',
     debugTerminalFilteredCount: '{0} visibles',
     debugTerminalClear: 'Borrar',

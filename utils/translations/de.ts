@@ -81,7 +81,7 @@ export const de = {
     debugTerminalEyebrow: 'Versteckte Diagnoseoberflaeche',
     debugTerminalTitle: 'Debug-Terminal',
     debugTerminalDescription:
-        'Prufe bereinigte Gemini-Anfragen, Stream-Fragmente, Modellantworten, Wiederholungen und Fehler, ohne API-Schluessel oder rohe Bilddaten offenzulegen.',
+        'Prufe bereinigte Gemini-Anfragen, finale Ergebnisbestandteile, Modellantworten, Wiederholungen und Fehler, ohne API-Schluessel oder rohe Bilddaten offenzulegen.',
     debugTerminalEventCount: '{0} Ereignisse gesamt',
     debugTerminalFilteredCount: '{0} sichtbar',
     debugTerminalClear: 'Leeren',

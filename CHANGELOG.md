@@ -1,8 +1,13 @@
 # Changelog
 
+## v1.1.4 - 2026-05-18
+
+- Lite AI Studio image generation now uses blocking Gemini requests instead of live-progress streaming, avoiding AI Studio stream permission failures while still extracting visible thought artifacts from final responses.
+- Live-progress capability gating, product documentation, and debug-terminal wording now state the Lite boundary clearly: visible thoughts come from final responses, while hidden thought signatures remain continuity metadata.
+
 ## v1.1.3 - 2026-05-18
 
-- Added a hidden debug terminal opened from the small top-header button, with a dedicated full-screen panel for inspecting sanitized Gemini requests, model responses, stream chunks, retries, workflow logs, and errors.
+- Added a hidden debug terminal opened from the small top-header button, with a dedicated full-screen panel for inspecting sanitized Gemini requests, model responses, final result parts, retries, workflow logs, and errors.
 - Debug traces now persist in a separate browser-local history with filtering, JSON export, copy-selected, and clear controls for later troubleshooting without affecting normal workspace restore data.
 - Added debug terminal UI localization across all supported Lite languages.
 

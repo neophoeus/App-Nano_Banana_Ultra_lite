@@ -78,7 +78,7 @@ export const ko = {
     debugTerminalEyebrow: '숨김 진단 화면',
     debugTerminalTitle: '디버그 터미널',
     debugTerminalDescription:
-        'API 키나 원본 이미지 바이트를 노출하지 않고, 정리된 Gemini 요청, 스트림 조각, 모델 응답, 재시도, 오류를 확인합니다.',
+        'API 키나 원본 이미지 바이트를 노출하지 않고, 정리된 Gemini 요청, 최종 결과 파트, 모델 응답, 재시도, 오류를 확인합니다.',
     debugTerminalEventCount: '총 {0}개 이벤트',
     debugTerminalFilteredCount: '현재 {0}개 표시',
     debugTerminalClear: '비우기',

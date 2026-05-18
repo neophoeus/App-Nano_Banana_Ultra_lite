@@ -77,7 +77,7 @@ export const zh_TW = {
     debugTerminalEyebrow: '隱藏式診斷介面',
     debugTerminalTitle: '除錯終端',
     debugTerminalDescription:
-        '查看已遮蔽的 Gemini 請求、串流片段、模型回應、重試與錯誤，不會顯示 API key 或原始圖片位元資料。',
+        '查看已遮蔽的 Gemini 請求、最終結果片段、模型回應、重試與錯誤，不會顯示 API key 或原始圖片位元資料。',
     debugTerminalEventCount: '共 {0} 筆事件',
     debugTerminalFilteredCount: '目前顯示 {0} 筆',
     debugTerminalClear: '清空',

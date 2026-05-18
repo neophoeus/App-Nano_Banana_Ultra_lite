@@ -125,7 +125,7 @@ export const zh_CN = {
     debugTerminalEyebrow: '隐藏式诊断界面',
     debugTerminalTitle: '调试终端',
     debugTerminalDescription:
-        '查看已遮蔽的 Gemini 请求、串流片段、模型响应、重试与错误，不会显示 API key 或原始图片字节数据。',
+        '查看已遮蔽的 Gemini 请求、最终结果片段、模型响应、重试与错误，不会显示 API key 或原始图片字节数据。',
     debugTerminalEventCount: '共 {0} 条事件',
     debugTerminalFilteredCount: '当前显示 {0} 条',
     debugTerminalClear: '清空',

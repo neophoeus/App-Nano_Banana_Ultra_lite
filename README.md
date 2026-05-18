@@ -12,6 +12,8 @@ It keeps the fast local workspace flow for Gemini image generation, references, 
 
 Nano Banana Ultra _lite_ is intended to run inside Google AI Studio. Gemini API access comes from the AI Studio environment automatically; _lite_ does not support manual browser API-key entry or a separate local standalone key flow.
 
+Inside AI Studio, _lite_ uses blocking Gemini image-generation requests instead of browser live-progress streams. When the final response includes visible thought text or thought images, _lite_ extracts those artifacts from the final payload; hidden thought signatures are kept as continuity metadata and are not displayed as visible thoughts.
+
 ## Lite v1.1 Scope
 
 - browser-only React + Vite frontend
@@ -24,6 +26,7 @@ Nano Banana Ultra _lite_ is intended to run inside Google AI Studio. Gemini API 
 
 - queued batch workflow
 - shared snapshot and shared restore plumbing
+- live-progress streaming for Gemini image generation; _lite_ reads final-response thought artifacts from blocking calls
 - backend-only or long-running orchestration copied from the full Ultra app
 
 ## Relationship To Ultra
@@ -37,7 +40,7 @@ Use _lite_ when you want the simpler browser-first frontend experience with a sm
 
 ## Version
 
-Current Lite release: `v1.1.3`
+Current Lite release: `v1.1.4`
 
 Release notes: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -79,6 +82,8 @@ Nano Banana Ultra _lite_ 是 [App-Nano_Banana_Ultra](https://github.com/neophoeu
 
 _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環境自動提供；_lite_ 不支援手動在瀏覽器輸入 API key，也不提供獨立本機 key 流程。
 
+在 AI Studio 中，_lite_ 會使用 blocking Gemini 影像生成請求，不開啟瀏覽器 live-progress stream。當 final response 內含可見 thought 文字或 thought image 時，_lite_ 會從最後 payload 擷取；hidden thought signature 只作為 continuity metadata 保存，不當成可見思考顯示。
+
 ## Lite v1.1 範圍
 
 - 以 React + Vite 為基礎的純前端瀏覽器版
@@ -91,6 +96,7 @@ _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環
 
 - queued batch 工作流
 - shared snapshot / shared restore 管線
+- Gemini 影像生成 live-progress 串流；Lite 只從 blocking final response 讀取 thought artifacts
 - 不適合前端輕量版的 backend-only 或長任務 orchestration
 
 ## 與 Ultra 的關係
@@ -104,7 +110,7 @@ _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環
 
 ## 版本
 
-目前 Lite 版本：`v1.1.3`
+目前 Lite 版本：`v1.1.4`
 
 版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
 

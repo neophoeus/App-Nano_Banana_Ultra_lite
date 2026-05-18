@@ -844,20 +844,17 @@ const shouldUseLiveProgressStream = (options: GenerateOptions, batchSize: number
         model: options.model,
         executionMode: options.executionMode || 'single-turn',
         outputFormat: options.outputFormat || 'images-only',
-        thinkingLevel:
-            options.thinkingLevel || (options.model === 'gemini-3.1-flash-image-preview' ? 'minimal' : 'disabled'),
+        thinkingLevel: options.thinkingLevel || 'disabled',
         includeThoughts: Boolean(options.includeThoughts),
         batchSize,
     });
 
 const shouldUseLiveProgressFanOut = (options: GenerateOptions, batchSize: number): boolean =>
-    options.executionMode === 'interactive-batch-variants' &&
     isLiveProgressFanOutEligibleRequest({
         model: options.model,
-        executionMode: options.executionMode,
+        executionMode: options.executionMode || 'single-turn',
         outputFormat: options.outputFormat || 'images-only',
-        thinkingLevel:
-            options.thinkingLevel || (options.model === 'gemini-3.1-flash-image-preview' ? 'minimal' : 'disabled'),
+        thinkingLevel: options.thinkingLevel || 'disabled',
         includeThoughts: Boolean(options.includeThoughts),
         batchSize,
     });
@@ -1782,7 +1779,11 @@ export const generateImageWithGemini = async (
                             : `Image #${result.slotIndex + 1}: Test override failure`,
                     summary:
                         result.status === 'success'
-                            ? [result.url ? 'image' : null, result.text ? 'text' : null, result.thoughts ? 'thoughts' : null]
+                            ? [
+                                  result.url ? 'image' : null,
+                                  result.text ? 'text' : null,
+                                  result.thoughts ? 'thoughts' : null,
+                              ]
                                   .filter(Boolean)
                                   .join(' | ') || 'override success'
                             : result.error || 'override failure',

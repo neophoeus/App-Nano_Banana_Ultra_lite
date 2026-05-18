@@ -2,7 +2,12 @@ import { ExecutionMode, ImageModel, OutputFormat, ThinkingLevel } from '../types
 import { IMAGE_MODELS, MODEL_CAPABILITIES } from './modelCapabilities';
 
 export type LiveProgressExecutionMode = Extract<ExecutionMode, 'single-turn' | 'chat-continuation'>;
-export type LiveProgressArtifactKind = 'thought-text' | 'thought-image' | 'output-text' | 'output-image' | 'thought-signature';
+export type LiveProgressArtifactKind =
+    | 'thought-text'
+    | 'thought-image'
+    | 'output-text'
+    | 'output-image'
+    | 'thought-signature';
 export type LiveProgressTruthfulnessOutcome =
     | 'live-progress'
     | 'hidden-signature-only'
@@ -47,6 +52,8 @@ export type LiveProgressStreamTruthSummary = {
 
 const LIVE_PROGRESS_EXECUTION_MODES: LiveProgressExecutionMode[] = ['single-turn', 'chat-continuation'];
 const LIVE_PROGRESS_OUTPUT_FORMATS: OutputFormat[] = ['images-only', 'images-and-text'];
+export const LITE_AI_STUDIO_LIVE_PROGRESS_DISABLED_REASON =
+    'Lite AI Studio uses blocking Gemini requests and reads thought artifacts from the final response instead of opening live progress streams.';
 
 const getProbeThinkingLevels = (model: ImageModel): ThinkingLevel[] =>
     model === 'gemini-3.1-flash-image-preview' ? ['minimal', 'high'] : ['disabled'];
@@ -63,49 +70,14 @@ export const buildLiveProgressCellId = ({
     thinkingLevel: ThinkingLevel;
 }) => [model, executionMode, outputFormat, thinkingLevel].join(':');
 
-export const describeLiveProgressIneligibility = ({
-    model,
-    executionMode,
-    outputFormat,
-    thinkingLevel,
-    includeThoughts,
-    batchSize,
-}: LiveProgressGateRequest): string | null => {
+export const describeLiveProgressIneligibility = ({ model }: LiveProgressGateRequest): string | null => {
     const capability = MODEL_CAPABILITIES[model];
 
     if (!capability) {
         return `Unsupported model: ${model}`;
     }
 
-    if (typeof batchSize === 'number' && batchSize !== 1) {
-        return 'Live progress streaming currently only runs on batch size 1 interactive requests.';
-    }
-
-    if (!LIVE_PROGRESS_EXECUTION_MODES.includes(executionMode as LiveProgressExecutionMode)) {
-        return 'Live progress streaming currently only runs on single-turn or chat-continuation requests.';
-    }
-
-    if (!capability.outputFormats.includes(outputFormat)) {
-        return `${model} does not support output format ${outputFormat}.`;
-    }
-
-    if (!capability.thinkingLevels.includes(thinkingLevel)) {
-        return `${model} does not support thinking level ${thinkingLevel}.`;
-    }
-
-    if (!capability.supportsIncludeThoughts) {
-        return `${model} does not support returning thoughts for live progress.`;
-    }
-
-    if (!includeThoughts) {
-        return 'Live progress streaming requires includeThoughts=true so the UI only lights up when real thought artifacts exist.';
-    }
-
-    if (model === 'gemini-2.5-flash-image') {
-        return 'gemini-2.5-flash-image is excluded from live thought progress acceptance.';
-    }
-
-    return null;
+    return LITE_AI_STUDIO_LIVE_PROGRESS_DISABLED_REASON;
 };
 
 export const isLiveProgressEligibleRequest = (request: LiveProgressGateRequest): boolean =>
@@ -140,7 +112,9 @@ export const describeLiveProgressFanOutIneligibility = ({
 export const isLiveProgressFanOutEligibleRequest = (request: LiveProgressFanOutRequest): boolean =>
     !describeLiveProgressFanOutIneligibility(request);
 
-export const getLiveProgressCapabilityMatrix = (options?: { includeExcluded?: boolean }): LiveProgressCapabilityCell[] => {
+export const getLiveProgressCapabilityMatrix = (options?: {
+    includeExcluded?: boolean;
+}): LiveProgressCapabilityCell[] => {
     const includeExcluded = options?.includeExcluded ?? true;
     const cells = IMAGE_MODELS.flatMap((model) =>
         LIVE_PROGRESS_EXECUTION_MODES.flatMap((executionMode) =>

@@ -80,7 +80,7 @@ export const en = {
     debugTerminalEyebrow: 'Hidden diagnostic surface',
     debugTerminalTitle: 'Debug Terminal',
     debugTerminalDescription:
-        'Inspect sanitized Gemini requests, streamed result parts, model responses, retries, and failures without exposing API keys or raw image bytes.',
+        'Inspect sanitized Gemini requests, final result parts, model responses, retries, and failures without exposing API keys or raw image bytes.',
     debugTerminalEventCount: '{0} total events',
     debugTerminalFilteredCount: '{0} visible',
     debugTerminalClear: 'Clear',
@@ -88,7 +88,8 @@ export const en = {
     debugTerminalCopySelected: 'Copy selected',
     debugTerminalAutoScrollOn: 'Auto-scroll on',
     debugTerminalAutoScrollOff: 'Auto-scroll off',
-    debugTerminalEmpty: 'No debug events yet. Generate or use a prompt tool to start capturing sanitized request and response traces.',
+    debugTerminalEmpty:
+        'No debug events yet. Generate or use a prompt tool to start capturing sanitized request and response traces.',
     debugTerminalSelectEvent: 'Select an event to inspect its sanitized payload.',
     debugTerminalFilterAll: 'All',
     debugTerminalFilterRequest: 'Request',
