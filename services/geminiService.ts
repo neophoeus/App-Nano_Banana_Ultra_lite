@@ -29,6 +29,7 @@ import { DEFAULT_TEMPERATURE, normalizeTemperature } from '../utils/temperature'
 import { Language } from '../utils/translations';
 import { extractGroundingDetails } from '../utils/geminiGroundingExtraction';
 import { buildImageRequestConfig, validateCapabilityRequest } from '../utils/geminiRequestConfig';
+import { emitDebugTerminalEvent } from '../utils/debugTerminalEvents';
 
 function isAbortLikeError(error: unknown): boolean {
     return (
@@ -54,7 +55,17 @@ async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promi
         response = await fetch(input, init);
     } catch (error) {
         if (isAbortLikeError(error)) {
-            throw new Error('ABORTED');
+            const abortError = new Error('ABORTED');
+            emitGenerationDebugEvent({
+                kind: 'error',
+                label: `Image #${imgIndex}: Stream aborted`,
+                summary: buildErrorSummary(abortError),
+                requestId: prepared?.debugRequestId,
+                sessionId: streamSessionId,
+                slotIndex: eventContext?.slotIndex,
+                payload: { error: abortError },
+            });
+            throw abortError;
         }
         throw error;
     }
@@ -144,6 +155,7 @@ type BrowserLiveProgressAccumulator = {
 };
 
 type PreparedBrowserGenerateRequest = {
+    debugRequestId: string;
     requestBody: {
         prompt: string;
         model: GenerateOptions['model'];
@@ -170,6 +182,12 @@ type PreparedBrowserGenerateRequest = {
     conversationHistoryResult: Awaited<ReturnType<typeof buildBrowserConversationHistory>>;
     useOfficialConversation: boolean;
     ai: GoogleGenAI;
+};
+
+type DebugGeminiAuthState = {
+    source: 'env' | 'aistudio-intercepted' | 'missing';
+    hasVisibleEnvKey: boolean;
+    hasAiStudioHost: boolean;
 };
 
 type BrowserOnlyTestGenerateImageContext = {
@@ -481,6 +499,73 @@ const cleanPromptToolResponseText = (text: string | undefined, fallback: string)
 const AI_STUDIO_API_UNAVAILABLE_ERROR = 'Gemini API is not available in this AI Studio session.';
 const AI_STUDIO_INTERCEPTED_API_KEY = 'AISTUDIO_INTERCEPTED_KEY';
 
+const createDebugRequestId = (): string => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    return `request-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const resolveGeminiClientAuthState = (): DebugGeminiAuthState => {
+    const hasVisibleEnvKey = Boolean(resolveGeminiApiKey());
+    const hasAiStudioHost = typeof window !== 'undefined' && Boolean(window.aistudio);
+
+    return {
+        source: hasVisibleEnvKey ? 'env' : hasAiStudioHost ? 'aistudio-intercepted' : 'missing',
+        hasVisibleEnvKey,
+        hasAiStudioHost,
+    };
+};
+
+const buildGenerationRequestSummary = (options: GenerateOptions, imgIndex: number): string =>
+    `Image #${imgIndex}: ${options.model} via ${options.executionMode || 'single-turn'}`;
+
+const buildResponseSummary = (response: GenerateResponse): string =>
+    [
+        response.imageUrl ? 'image' : null,
+        response.text ? 'text' : null,
+        response.thoughts ? 'thoughts' : null,
+        response.failure?.code ? `failure:${response.failure.code}` : null,
+    ]
+        .filter(Boolean)
+        .join(' | ') || 'no output content';
+
+const buildErrorSummary = (error: unknown): string => {
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const failure = getGenerationFailure(normalizedError);
+
+    return failure ? `${normalizedError.message} (${failure.code})` : normalizedError.message;
+};
+
+const emitGenerationDebugEvent = ({
+    kind,
+    label,
+    summary,
+    payload,
+    requestId,
+    sessionId,
+    slotIndex,
+}: {
+    kind: 'request' | 'response' | 'error' | 'stream' | 'retry' | 'log';
+    label: string;
+    summary?: string;
+    payload?: unknown;
+    requestId?: string;
+    sessionId?: string;
+    slotIndex?: number;
+}) => {
+    emitDebugTerminalEvent({
+        kind,
+        label,
+        summary,
+        payload,
+        requestId,
+        sessionId,
+        slotIndex,
+    });
+};
+
 const getGeminiClient = (): GoogleGenAI => {
     let apiKey = resolveGeminiApiKey();
     if (!apiKey) {
@@ -500,6 +585,7 @@ const prepareBrowserGenerateRequest = async (
     onLog?: (msg: string) => void,
     abortSignal?: AbortSignal,
 ): Promise<PreparedBrowserGenerateRequest> => {
+    const debugRequestId = createDebugRequestId();
     const finalPrompt = buildStyleAwareImagePrompt(options);
     const requestBody = {
         prompt: finalPrompt,
@@ -543,7 +629,30 @@ const prepareBrowserGenerateRequest = async (
         );
     }
 
+    emitGenerationDebugEvent({
+        kind: 'request',
+        label: `Image #${imgIndex}: Request prepared`,
+        summary: buildGenerationRequestSummary(options, imgIndex),
+        requestId: debugRequestId,
+        payload: {
+            requestBody,
+            requestConfig,
+            resolvedResponseModalities,
+            groundingMode,
+            effectiveThinkingLevel,
+            shouldIncludeThoughts,
+            parts,
+            conversationHistory: {
+                usable: conversationHistoryResult.usable,
+                historyLength: conversationHistoryResult.history.length,
+            },
+            useOfficialConversation,
+            auth: resolveGeminiClientAuthState(),
+        },
+    });
+
     return {
+        debugRequestId,
         requestBody,
         requestConfig,
         resolvedResponseModalities,
@@ -919,6 +1028,7 @@ const generateSingleImageStream = async (
     eventContext?: GenerationLiveProgressEventContext,
 ): Promise<StreamGenerationResponse> => {
     let finalResponse: GenerateResponse | null = null;
+    let prepared: PreparedBrowserGenerateRequest | null = null;
     let didReceiveStreamEvent = false;
     let transportOpened = false;
     let lastChunk: any = null;
@@ -927,7 +1037,7 @@ const generateSingleImageStream = async (
 
     try {
         onLog?.(`Image #${imgIndex}: Opening live progress stream...`);
-        const prepared = await prepareBrowserGenerateRequest(options, imgIndex, onLog, abortSignal);
+        prepared = await prepareBrowserGenerateRequest(options, imgIndex, onLog, abortSignal);
         const requestConfig = withAbortSignal(prepared.requestConfig, abortSignal);
         throwIfAborted(abortSignal);
         const stream = prepared.useOfficialConversation
@@ -949,6 +1059,18 @@ const generateSingleImageStream = async (
 
         transportOpened = true;
         didReceiveStreamEvent = true;
+        emitGenerationDebugEvent({
+            kind: 'stream',
+            label: `Image #${imgIndex}: Stream opened`,
+            summary: prepared.useOfficialConversation ? 'chat.sendMessageStream' : 'models.generateContentStream',
+            requestId: prepared.debugRequestId,
+            sessionId: streamSessionId,
+            slotIndex: eventContext?.slotIndex,
+            payload: {
+                useOfficialConversation: prepared.useOfficialConversation,
+                requestConfig,
+            },
+        });
         onLiveProgressEvent?.(
             buildLiveProgressEvent(
                 {
@@ -965,6 +1087,21 @@ const generateSingleImageStream = async (
 
             const applied = applyBrowserStreamChunkToAccumulator(streamState, chunk);
             streamState = applied.state;
+
+            emitGenerationDebugEvent({
+                kind: 'stream',
+                label: `Image #${imgIndex}: Stream chunk`,
+                summary: `${applied.newParts.length} new part(s), ${streamState.resultParts.length} accumulated`,
+                requestId: prepared.debugRequestId,
+                sessionId: streamSessionId,
+                slotIndex: eventContext?.slotIndex,
+                payload: {
+                    chunk,
+                    newParts: applied.newParts,
+                    accumulatedResultParts: streamState.resultParts.length,
+                    thoughtSignatureObserved: streamState.thoughtSignatureObserved,
+                },
+            });
 
             applied.newParts.forEach((part) => {
                 onLiveProgressEvent?.(
@@ -994,6 +1131,19 @@ const generateSingleImageStream = async (
             imgIndex,
             onLog,
             abortSignal,
+        });
+
+        emitGenerationDebugEvent({
+            kind: 'response',
+            label: `Image #${imgIndex}: Stream completed`,
+            summary: buildResponseSummary(finalResponse),
+            requestId: prepared.debugRequestId,
+            sessionId: streamSessionId,
+            slotIndex: eventContext?.slotIndex,
+            payload: {
+                response: finalResponse,
+                transportOpened,
+            },
         });
 
         const summary = buildBrowserLiveProgressSummary(streamState, Boolean(finalResponse.imageUrl), transportOpened);
@@ -1042,6 +1192,22 @@ const generateSingleImageStream = async (
                 summary,
             },
         );
+
+        emitGenerationDebugEvent({
+            kind: 'error',
+            label: `Image #${imgIndex}: Stream failed`,
+            summary: buildErrorSummary(streamError),
+            requestId: prepared?.debugRequestId,
+            sessionId: streamSessionId,
+            slotIndex: eventContext?.slotIndex,
+            payload: {
+                error: streamError,
+                failure: getGenerationFailure(streamError),
+                didReceiveStreamEvent,
+                transportOpened,
+                partialResponse: streamError.partialResponse,
+            },
+        });
 
         if (transportOpened) {
             onLiveProgressEvent?.(
@@ -1182,7 +1348,8 @@ export const enhancePromptWithGemini = async (currentPrompt: string, lang: Langu
     }
 
     const normalizedLanguage = normalizePromptToolLanguage(lang);
-    const response = await getGeminiClient().models.generateContent({
+    const requestId = createDebugRequestId();
+    const requestPayload = {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: buildPromptEnhancerInstruction(normalizedLanguage),
@@ -1192,14 +1359,45 @@ export const enhancePromptWithGemini = async (currentPrompt: string, lang: Langu
         contents:
             `Current prompt: ${currentPrompt || 'A creative image'}\n\n` +
             'Rewrite the prompt entirely in the requested UI language while preserving the same concept. Return only the final prompt text. You may use one dense paragraph or a few prompt-only lines separated by line breaks if that improves detail and clarity. No analysis, commentary, headings, or labels.',
+    };
+
+    emitGenerationDebugEvent({
+        kind: 'request',
+        label: 'Prompt enhancer request',
+        summary: `Prompt enhancer (${normalizedLanguage})`,
+        requestId,
+        payload: requestPayload,
     });
 
-    const promptText = cleanPromptToolResponseText(response.text, '');
-    if (!promptText) {
-        throw new Error('Prompt enhancement returned empty text.');
-    }
+    try {
+        const response = await getGeminiClient().models.generateContent(requestPayload);
+        const promptText = cleanPromptToolResponseText(response.text, '');
+        if (!promptText) {
+            throw new Error('Prompt enhancement returned empty text.');
+        }
 
-    return promptText;
+        emitGenerationDebugEvent({
+            kind: 'response',
+            label: 'Prompt enhancer response',
+            summary: 'Prompt text generated',
+            requestId,
+            payload: {
+                text: response.text,
+                finalPrompt: promptText,
+            },
+        });
+
+        return promptText;
+    } catch (error) {
+        emitGenerationDebugEvent({
+            kind: 'error',
+            label: 'Prompt enhancer failed',
+            summary: buildErrorSummary(error),
+            requestId,
+            payload: { error },
+        });
+        throw error;
+    }
 };
 
 export const generateRandomPrompt = async (lang: Language): Promise<string> => {
@@ -1209,7 +1407,8 @@ export const generateRandomPrompt = async (lang: Language): Promise<string> => {
     }
 
     const normalizedLanguage = normalizePromptToolLanguage(lang);
-    const response = await getGeminiClient().models.generateContent({
+    const requestId = createDebugRequestId();
+    const requestPayload = {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: buildRandomPromptInstruction(normalizedLanguage),
@@ -1217,14 +1416,45 @@ export const generateRandomPrompt = async (lang: Language): Promise<string> => {
             temperature: 0.7,
         },
         contents: buildRandomPromptRequest(),
+    };
+
+    emitGenerationDebugEvent({
+        kind: 'request',
+        label: 'Random prompt request',
+        summary: `Random prompt (${normalizedLanguage})`,
+        requestId,
+        payload: requestPayload,
     });
 
-    const promptText = cleanPromptToolResponseText(response.text, '');
-    if (!promptText) {
-        throw new Error('Random prompt generation returned empty text.');
-    }
+    try {
+        const response = await getGeminiClient().models.generateContent(requestPayload);
+        const promptText = cleanPromptToolResponseText(response.text, '');
+        if (!promptText) {
+            throw new Error('Random prompt generation returned empty text.');
+        }
 
-    return promptText;
+        emitGenerationDebugEvent({
+            kind: 'response',
+            label: 'Random prompt response',
+            summary: 'Prompt text generated',
+            requestId,
+            payload: {
+                text: response.text,
+                finalPrompt: promptText,
+            },
+        });
+
+        return promptText;
+    } catch (error) {
+        emitGenerationDebugEvent({
+            kind: 'error',
+            label: 'Random prompt failed',
+            summary: buildErrorSummary(error),
+            requestId,
+            payload: { error },
+        });
+        throw error;
+    }
 };
 
 export const generatePromptFromImage = async (imageDataUrl: string, lang: Language): Promise<string> => {
@@ -1238,8 +1468,8 @@ export const generatePromptFromImage = async (imageDataUrl: string, lang: Langua
     if (!inlineImage || !inlineImage.mimeType.startsWith('image/')) {
         throw new Error('A valid image data URL is required.');
     }
-
-    const response = await getGeminiClient().models.generateContent({
+    const requestId = createDebugRequestId();
+    const requestPayload = {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: buildImageToPromptInstruction(normalizedLanguage),
@@ -1252,14 +1482,45 @@ export const generatePromptFromImage = async (imageDataUrl: string, lang: Langua
                 text: 'Analyze this image carefully and return a structured image-to-prompt brief in the requested UI language. Describe only details that are visible or strongly supported by the image. If something is uncertain, say so instead of guessing. Keep the final section as a polished generation-ready prompt paragraph in the requested language unless you are quoting visible text.',
             },
         ],
+    };
+
+    emitGenerationDebugEvent({
+        kind: 'request',
+        label: 'Image-to-prompt request',
+        summary: `Image-to-prompt (${normalizedLanguage})`,
+        requestId,
+        payload: requestPayload,
     });
 
-    const promptText = cleanPromptToolResponseText(response.text, '');
-    if (!promptText) {
-        throw new Error('Image to prompt returned empty text.');
-    }
+    try {
+        const response = await getGeminiClient().models.generateContent(requestPayload);
+        const promptText = cleanPromptToolResponseText(response.text, '');
+        if (!promptText) {
+            throw new Error('Image to prompt returned empty text.');
+        }
 
-    return promptText;
+        emitGenerationDebugEvent({
+            kind: 'response',
+            label: 'Image-to-prompt response',
+            summary: 'Prompt text generated',
+            requestId,
+            payload: {
+                text: response.text,
+                finalPrompt: promptText,
+            },
+        });
+
+        return promptText;
+    } catch (error) {
+        emitGenerationDebugEvent({
+            kind: 'error',
+            label: 'Image-to-prompt failed',
+            summary: buildErrorSummary(error),
+            requestId,
+            payload: { error },
+        });
+        throw error;
+    }
 };
 
 // --- Image Generation Logic ---
@@ -1294,7 +1555,7 @@ const generateSingleImage = async (
 
         throwIfAborted(abortSignal);
 
-        return await buildGenerateResponseFromSdkResponse({
+        const response = await buildGenerateResponseFromSdkResponse({
             options,
             prepared,
             sdkResponse,
@@ -1303,23 +1564,67 @@ const generateSingleImage = async (
             onLog,
             abortSignal,
         });
+
+        emitGenerationDebugEvent({
+            kind: 'response',
+            label: `Image #${imgIndex}: Blocking response received`,
+            summary: buildResponseSummary(response),
+            requestId: prepared.debugRequestId,
+            payload: {
+                response,
+                transport: prepared.useOfficialConversation ? 'chat.sendMessage' : 'models.generateContent',
+            },
+        });
+
+        return response;
     } catch (error: any) {
         if (isAbortLikeError(error)) {
-            throw new Error('ABORTED');
+            const abortError = new Error('ABORTED');
+            emitGenerationDebugEvent({
+                kind: 'error',
+                label: `Image #${imgIndex}: Blocking request aborted`,
+                summary: buildErrorSummary(abortError),
+                payload: { error: abortError },
+            });
+            throw abortError;
         }
 
         const failure = getGenerationFailure(error);
         if (failure) {
-            throw attachGenerationFailure(new Error(failure.message), failure);
+            const normalizedFailureError = attachGenerationFailure(new Error(failure.message), failure);
+            emitGenerationDebugEvent({
+                kind: 'error',
+                label: `Image #${imgIndex}: Blocking request failed`,
+                summary: buildErrorSummary(normalizedFailureError),
+                payload: {
+                    error: normalizedFailureError,
+                    failure,
+                },
+            });
+            throw normalizedFailureError;
         }
 
         const errorMessage = error.message || 'Unknown error';
 
         if (errorMessage.includes('limit: 0')) {
-            throw new Error('Gemini API quota is unavailable for this AI Studio session.');
+            const quotaError = new Error('Gemini API quota is unavailable for this AI Studio session.');
+            emitGenerationDebugEvent({
+                kind: 'error',
+                label: `Image #${imgIndex}: Blocking request failed`,
+                summary: buildErrorSummary(quotaError),
+                payload: { error: quotaError },
+            });
+            throw quotaError;
         }
 
-        throw new Error(errorMessage);
+        const normalizedError = new Error(errorMessage);
+        emitGenerationDebugEvent({
+            kind: 'error',
+            label: `Image #${imgIndex}: Blocking request failed`,
+            summary: buildErrorSummary(normalizedError),
+            payload: { error: normalizedError },
+        });
+        throw normalizedError;
     }
 };
 
@@ -1387,6 +1692,16 @@ const retryOperation = async <T>(
                     if (retryAfterMatch) waitMs = Math.max(waitMs, parseInt(retryAfterMatch[1]) * 1000);
                 }
                 onLog?.(`⏳ Retrying in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
+                emitGenerationDebugEvent({
+                    kind: 'retry',
+                    label: 'Retry scheduled',
+                    summary: `${msg || 'Transient failure'} -> ${(waitMs / 1000).toFixed(1)}s delay`,
+                    payload: {
+                        error: error instanceof Error ? error : new Error(String(error)),
+                        retriesRemaining: retries,
+                        waitMs,
+                    },
+                });
                 // F1-FIX: Use abortable delay so cancel takes effect during retry wait
                 await new Promise<void>((resolve, reject) => {
                     const handler = () => {
@@ -1431,15 +1746,71 @@ export const generateImageWithGemini = async (
 ): Promise<GenerationResult[]> => {
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateImageWithGemini;
     if (testOverride) {
-        return await testOverride(options, {
-            batchSize,
-            onImageReceived,
-            onLog,
-            abortSignal,
-            onProgress,
-            onResult,
-            onLiveProgressEvent,
+        const debugRequestId = createDebugRequestId();
+        const debugSessionId = options.liveProgressBatchSessionId || undefined;
+
+        emitGenerationDebugEvent({
+            kind: 'request',
+            label: 'Generation request prepared (test override)',
+            summary: `${options.model} test override x${batchSize}`,
+            requestId: debugRequestId,
+            sessionId: debugSessionId,
+            payload: {
+                options,
+                batchSize,
+                source: 'test-override',
+            },
         });
+
+        try {
+            const results = await testOverride(options, {
+                batchSize,
+                onImageReceived,
+                onLog,
+                abortSignal,
+                onProgress,
+                onResult,
+                onLiveProgressEvent,
+            });
+
+            results.forEach((result) => {
+                emitGenerationDebugEvent({
+                    kind: result.status === 'success' ? 'response' : 'error',
+                    label:
+                        result.status === 'success'
+                            ? `Image #${result.slotIndex + 1}: Test override response`
+                            : `Image #${result.slotIndex + 1}: Test override failure`,
+                    summary:
+                        result.status === 'success'
+                            ? [result.url ? 'image' : null, result.text ? 'text' : null, result.thoughts ? 'thoughts' : null]
+                                  .filter(Boolean)
+                                  .join(' | ') || 'override success'
+                            : result.error || 'override failure',
+                    requestId: debugRequestId,
+                    sessionId: debugSessionId,
+                    slotIndex: result.slotIndex,
+                    payload: {
+                        result,
+                        source: 'test-override',
+                    },
+                });
+            });
+
+            return results;
+        } catch (error) {
+            emitGenerationDebugEvent({
+                kind: 'error',
+                label: 'Test override generation failed',
+                summary: buildErrorSummary(error),
+                requestId: debugRequestId,
+                sessionId: debugSessionId,
+                payload: {
+                    error,
+                    source: 'test-override',
+                },
+            });
+            throw error;
+        }
     }
 
     if (batchSize === 1 && shouldUseLiveProgressStream(options, batchSize)) {

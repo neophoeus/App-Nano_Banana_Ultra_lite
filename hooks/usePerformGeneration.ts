@@ -38,6 +38,7 @@ import {
     buildSavedImageFilenameStem,
 } from '../utils/savedImageFilename';
 import { buildStyleTransferPrompt } from '../utils/styleRegistry';
+import { emitDebugTerminalEvent } from '../utils/debugTerminalEvents';
 
 const MODEL_TRANSLATION_KEYS: Record<ImageModel, string> = {
     'gemini-3.1-flash-image-preview': 'modelGemini31Flash',
@@ -440,7 +441,15 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                     }
                 };
 
-                const handleLogCallback = (msg: string) => addLog(msg);
+                const handleLogCallback = (msg: string) => {
+                    addLog(msg);
+                    emitDebugTerminalEvent({
+                        kind: 'log',
+                        label: msg,
+                        summary: msg,
+                        sessionId: batchSessionId,
+                    });
+                };
                 const handleResultCallback = (result: GenerationResult) => {
                     if (controller.signal.aborted && isCancelledGenerationResult(result)) {
                         return;

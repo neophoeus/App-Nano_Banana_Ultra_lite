@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.3 - 2026-05-18
+
+- Added a hidden debug terminal opened from the small top-header button, with a dedicated full-screen panel for inspecting sanitized Gemini requests, model responses, stream chunks, retries, workflow logs, and errors.
+- Debug traces now persist in a separate browser-local history with filtering, JSON export, copy-selected, and clear controls for later troubleshooting without affecting normal workspace restore data.
+- Added debug terminal UI localization across all supported Lite languages.
+
 ## v1.1.2 - 2026-05-16
 
 - Viewing another history image no longer clears the current object and character reference images.

@@ -10,6 +10,7 @@ import {
 } from './types';
 import ComposerAdvancedSettingsDialog from './components/ComposerAdvancedSettingsDialog';
 import ComposerSettingsPanel from './components/ComposerSettingsPanel';
+import DebugTerminalPanel, { DebugTerminalToggleIcon } from './components/DebugTerminalPanel';
 import PanelLoadingFallback from './components/PanelLoadingFallback';
 import SurfaceLoadingFallback from './components/SurfaceLoadingFallback';
 import WorkspaceDetailModal from './components/WorkspaceDetailModal';
@@ -84,6 +85,7 @@ import { useWorkspaceShellUtilities } from './hooks/useWorkspaceShellUtilities';
 import { useWorkspaceShellOwnerState } from './hooks/useWorkspaceShellOwnerState';
 import { useWorkspaceSettingsSession } from './hooks/useWorkspaceSettingsSession';
 import { useWorkspaceTransientUiState } from './hooks/useWorkspaceTransientUiState';
+import { useDebugTerminal } from './hooks/useDebugTerminal';
 import { resolveCurrentStageSelectionFirstSourceOverride } from './utils/generationSourceOverride';
 import { buildSavedImageLoadUrl, loadImageMetadata } from './utils/imageSaveUtils';
 import {
@@ -106,7 +108,7 @@ const SketchPad = lazy(() => import('./components/SketchPad'));
 const getShortTurnId = (historyId?: string | null) => (historyId ? historyId.slice(0, 8) : '--------');
 
 const buildResultPartIdentityKey = (part: ResultPart) =>
-    part.kind === 'thought-text' || part.kind === 'output-text'
+    'text' in part
         ? `${part.kind}:${part.sequence}:${part.text}`
         : `${part.kind}:${part.sequence}:${part.mimeType}:${part.imageUrl}`;
 
@@ -149,6 +151,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const initialComposerState = initialWorkspaceSnapshot.composerState || EMPTY_WORKSPACE_COMPOSER_STATE;
     const [apiKeyReady, setApiKeyReady] = useState(false);
     const [isCancelFinalizing, setIsCancelFinalizing] = useState(false);
+    const [isDebugTerminalOpen, setIsDebugTerminalOpen] = useState(false);
     const isDarkTheme = useDocumentThemeMode();
     const [currentLang, setCurrentLang] = useState<Language>(() => {
         const preferredLanguage = resolvePreferredLanguage();
@@ -184,6 +187,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const [branchContinuationSourceByBranchOriginId, setBranchContinuationSourceByBranchOriginId] = useState<
         Record<string, string>
     >(() => initialWorkspaceSnapshot.branchState.continuationSourceByBranchOriginId);
+    const debugTerminal = useDebugTerminal();
     const [conversationState, setConversationState] = useState(
         () => initialWorkspaceSnapshot.conversationState || EMPTY_WORKSPACE_CONVERSATION_STATE,
     );
@@ -406,6 +410,12 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const capability = MODEL_CAPABILITIES[imageModel];
     const groundingMode = deriveGroundingMode(googleSearch, imageSearch);
     const availableGroundingModes = useMemo(() => getAvailableGroundingModes(capability), [capability]);
+    const setGroundingModeDispatch = useCallback(
+        (value: React.SetStateAction<typeof groundingMode>) => {
+            setGroundingMode(typeof value === 'function' ? value(groundingMode) : value);
+        },
+        [groundingMode, setGroundingMode],
+    );
     const historyById = useMemo(() => new Map(history.map((item) => [item.id, item])), [history]);
     const getHistoryTurnById = useCallback(
         (historyId?: string | null) => {
@@ -863,7 +873,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         setOutputFormat,
         setTemperature,
         setThinkingLevel,
-        setGroundingMode,
+        setGroundingMode: setGroundingModeDispatch,
         showNotification,
         t,
     });
@@ -1700,20 +1710,32 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
             : null;
     const headerConsole = useMemo(
         () => (
-            <button
-                type="button"
-                data-testid="global-gemini-key-chip"
-                onClick={() => {
-                    void handleApiKeyConnect();
-                }}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200/80 bg-white/78 px-2 py-1 text-[10px] font-semibold text-slate-600 transition-colors hover:border-amber-300/80 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 dark:border-white/10 dark:bg-[#141922]/82 dark:text-slate-200 dark:hover:border-amber-400/50 dark:hover:text-slate-50 sm:px-2.5"
-                aria-label={t('statusPanelGeminiKey')}
-            >
-                <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${apiKeyReady ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                ></span>
-                <span>{t('statusPanelGeminiKey')}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+                <button
+                    type="button"
+                    data-testid="global-gemini-key-chip"
+                    onClick={() => {
+                        void handleApiKeyConnect();
+                    }}
+                    className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200/80 bg-white/78 px-2 py-1 text-[10px] font-semibold text-slate-600 transition-colors hover:border-amber-300/80 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 dark:border-white/10 dark:bg-[#141922]/82 dark:text-slate-200 dark:hover:border-amber-400/50 dark:hover:text-slate-50 sm:px-2.5"
+                    aria-label={t('statusPanelGeminiKey')}
+                >
+                    <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${apiKeyReady ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                    ></span>
+                    <span>{t('statusPanelGeminiKey')}</span>
+                </button>
+                <button
+                    type="button"
+                    data-testid="debug-terminal-toggle"
+                    onClick={() => setIsDebugTerminalOpen(true)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/80 bg-white/70 text-slate-500 transition-colors hover:border-cyan-300/80 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 dark:border-white/10 dark:bg-[#141922]/78 dark:text-slate-300 dark:hover:border-cyan-400/50 dark:hover:text-slate-50"
+                    aria-label={t('debugTerminalOpen')}
+                    title={t('debugTerminalOpen')}
+                >
+                    <DebugTerminalToggleIcon />
+                </button>
+            </div>
         ),
         [apiKeyReady, handleApiKeyConnect, t],
     );
@@ -2120,7 +2142,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
             groundingQueries,
             selectedSourcesCount: selectedSources.length,
             selectedSupportBundlesCount: selectedSupportBundles.length,
-            searchEntryPointRenderedContent,
+            searchEntryPointRenderedContent: searchEntryPointRenderedContent ?? null,
             effectiveSessionHints,
             t,
         });
@@ -2499,7 +2521,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
                                     onCancel={closeEditor}
                                     isGenerating={isGenerating}
                                     currentLanguage={currentLang}
-                                    error={error?.message || null}
+                                    error={error?.detail || error?.summary || error?.rawError || null}
                                     onErrorClear={() => setError(null)}
                                     imageModel={imageModel}
                                     leftDockTopOffset={
@@ -2518,6 +2540,23 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
 
             <WorkspaceFloatingLayerContext.Provider value={workspaceFloatingLayerValue}>
                 <WorkspaceTopHeader {...workspaceTopHeaderProps} />
+
+                {isDebugTerminalOpen ? (
+                    <DebugTerminalPanel
+                        events={debugTerminal.events}
+                        filteredEvents={debugTerminal.filteredEvents}
+                        selectedEvent={debugTerminal.selectedEvent}
+                        selectedEventId={debugTerminal.selectedEventId}
+                        filter={debugTerminal.filter}
+                        autoScroll={debugTerminal.autoScroll}
+                        t={t}
+                        onFilterChange={debugTerminal.setFilter}
+                        onSelectEvent={debugTerminal.setSelectedEventId}
+                        onAutoScrollChange={debugTerminal.setAutoScroll}
+                        onClear={debugTerminal.clearEvents}
+                        onClose={() => setIsDebugTerminalOpen(false)}
+                    />
+                ) : null}
 
                 <div className="relative z-10 mx-auto flex min-h-screen max-w-[1560px] flex-col px-4 pb-[50px] pt-[100px] lg:px-4 lg:pb-[54px] xl:min-h-0 xl:px-3 xl:pt-[58px]">
                     <main className="mt-0 flex flex-1 flex-col gap-1.5 xl:min-h-0 xl:flex-none">
