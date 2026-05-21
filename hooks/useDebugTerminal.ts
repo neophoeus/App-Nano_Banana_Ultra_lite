@@ -5,6 +5,7 @@ import {
     DebugTerminalEventKind,
     subscribeDebugTerminalEvents,
     trimDebugTerminalEvents,
+    clearDebugTerminalEvents,
 } from '../utils/debugTerminalEvents';
 
 export type DebugTerminalFilter = DebugTerminalEventKind | 'all';
@@ -71,10 +72,19 @@ export function useDebugTerminal(): UseDebugTerminalReturn {
         });
     }, [autoScroll]);
 
+    useEffect(() => {
+        const handleClear = () => {
+            setEvents([]);
+            setSelectedEventId(null);
+        };
+        window.addEventListener('nbu_clear_debug_terminal', handleClear);
+        return () => {
+            window.removeEventListener('nbu_clear_debug_terminal', handleClear);
+        };
+    }, []);
+
     const clearEvents = useCallback(() => {
-        setEvents([]);
-        setSelectedEventId(null);
-        persistEvents([]);
+        clearDebugTerminalEvents();
     }, []);
 
     const filteredEvents = useMemo(

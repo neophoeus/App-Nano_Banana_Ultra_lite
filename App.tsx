@@ -1999,6 +1999,42 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         },
         [generationMode, getHistoryTurnById, selectedImageIndex, showNotification, stageViewerSettings.model, t],
     );
+    const stableHandleGenerateRef = useRef(handleGenerate);
+    stableHandleGenerateRef.current = handleGenerate;
+    const stableHandleGenerate = useCallback(() => {
+        stableHandleGenerateRef.current();
+    }, []);
+
+    const stableHandleOpenEditorRef = useRef(handleOpenEditor);
+    stableHandleOpenEditorRef.current = handleOpenEditor;
+    const stableHandleOpenEditor = useCallback(() => {
+        stableHandleOpenEditorRef.current();
+    }, []);
+
+    const stableHandleClearCurrentStageRef = useRef(handleClearCurrentStage);
+    stableHandleClearCurrentStageRef.current = handleClearCurrentStage;
+    const stableHandleClearCurrentStage = useCallback(() => {
+        stableHandleClearCurrentStageRef.current();
+    }, []);
+
+    const stableHandleDownloadStageImageRef = useRef(handleDownloadStageImage);
+    stableHandleDownloadStageImageRef.current = handleDownloadStageImage;
+    const stableHandleDownloadStageImage = useCallback((imageUrl: string) => {
+        return stableHandleDownloadStageImageRef.current(imageUrl);
+    }, []);
+
+    const stableHandleAddToObjectReferenceRef = useRef(handleAddToObjectReference);
+    stableHandleAddToObjectReferenceRef.current = handleAddToObjectReference;
+    const stableHandleAddToObjectReference = useCallback(() => {
+        stableHandleAddToObjectReferenceRef.current();
+    }, []);
+
+    const stableHandleAddToCharacterReferenceRef = useRef(handleAddToCharacterReference);
+    stableHandleAddToCharacterReferenceRef.current = handleAddToCharacterReference;
+    const stableHandleAddToCharacterReference = useCallback(() => {
+        stableHandleAddToCharacterReferenceRef.current();
+    }, []);
+
     const { workspaceViewerOverlayProps, generatedImageStageProps } = useWorkspaceStageViewer({
         generatedImageUrls,
         selectedImageIndex,
@@ -2016,12 +2052,12 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         settings: stageViewerSettings,
         generationMode,
         executionMode,
-        onGenerate: handleGenerate,
-        onEdit: handleOpenEditor,
-        onClear: handleClearCurrentStage,
-        onDownloadStageImage: handleDownloadStageImage,
-        onAddToObjectReference: handleAddToObjectReference,
-        onAddToCharacterReference: capability.maxCharacters > 0 ? handleAddToCharacterReference : undefined,
+        onGenerate: stableHandleGenerate,
+        onEdit: stableHandleOpenEditor,
+        onClear: stableHandleClearCurrentStage,
+        onDownloadStageImage: stableHandleDownloadStageImage,
+        onAddToObjectReference: stableHandleAddToObjectReference,
+        onAddToCharacterReference: capability.maxCharacters > 0 ? stableHandleAddToCharacterReference : undefined,
         currentLanguage: currentLang,
         currentLog: logs.length > 0 ? logs[logs.length - 1] : '',
         currentStageBranchLabel: currentStageLinkedBranchSummary?.branchLabel || null,

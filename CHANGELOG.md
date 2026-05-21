@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.1 - 2026-05-21
+
+- Added workspace reset terminal synchronization, so clearing the workspace now automatically cleans up the diagnostics terminal's local event history stored in localStorage.
+- Emitted a workspace-clear sync event to ensure active components clear their local state and the terminal UI updates immediately to reflect the empty history.
+
 ## v1.3.0 - 2026-05-18
 
 - Added adjustable Gemini safety filters inside Lite Advanced Settings for the four officially supported safety categories: harassment, hate speech, sexually explicit, and dangerous content.
