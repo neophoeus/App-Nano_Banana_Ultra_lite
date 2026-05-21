@@ -43,6 +43,7 @@ import {
     clearStoredWorkspaceSnapshot,
     EMPTY_WORKSPACE_COMPOSER_STATE,
     EMPTY_WORKSPACE_SNAPSHOT,
+    loadWorkspaceSnapshot,
 } from './utils/workspacePersistence';
 import { hasRestorableWorkspaceContent } from './utils/workspaceSnapshotState';
 import { deriveGroundingMode, getAvailableGroundingModes } from './utils/groundingMode';
@@ -145,8 +146,8 @@ type AppProps = {
     persistWorkspaceSnapshotOnChange?: boolean;
 };
 
-const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWorkspaceSnapshotOnChange = false }) => {
-    const [initialWorkspaceSnapshot] = useState(() => initialWorkspaceSnapshotOverride || EMPTY_WORKSPACE_SNAPSHOT);
+const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWorkspaceSnapshotOnChange = true }) => {
+    const [initialWorkspaceSnapshot] = useState(() => initialWorkspaceSnapshotOverride || loadWorkspaceSnapshot());
     const initialActiveResult = initialWorkspaceSnapshot.workspaceSession.activeResult;
     const initialComposerState = initialWorkspaceSnapshot.composerState || EMPTY_WORKSPACE_COMPOSER_STATE;
     const [apiKeyReady, setApiKeyReady] = useState(false);
@@ -222,10 +223,6 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const lastPromotedHistoryIdRef = useRef<string | null>(null);
     const activeBatchPreviewSessionRef = useRef<BatchPreviewSession | null>(null);
 
-    useEffect(() => {
-        clearStoredWorkspaceSnapshot();
-        void clearBrowserSavedImageRecords();
-    }, []);
 
     const {
         generatedImageUrls,

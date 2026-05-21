@@ -62,7 +62,34 @@ export function useWorkspaceAppLifecycle({
     useEffect(() => {
         let cancelled = false;
 
-        checkApiKey().then(setApiKeyReady);
+        const verifyApiKeyWithRetry = async () => {
+            const initialReady = await checkApiKey();
+            if (initialReady) {
+                setApiKeyReady(true);
+                return;
+            }
+
+            // 在 AI Studio 環境下，window.aistudio 的注入可能有延遲，進行 Polling 重試
+            let attempts = 0;
+            const maxAttempts = 10;
+            const interval = setInterval(async () => {
+                attempts++;
+                if (cancelled) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                const ready = await checkApiKey();
+                if (ready) {
+                    setApiKeyReady(true);
+                    clearInterval(interval);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                }
+            }, 500);
+        };
+
+        void verifyApiKeyWithRetry();
         syncThemeFromStoredPreference();
 
         const restoreLanguagePreference = async () => {

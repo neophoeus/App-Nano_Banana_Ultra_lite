@@ -4,6 +4,10 @@
 
 - Added workspace reset terminal synchronization, so clearing the workspace now automatically cleans up the diagnostics terminal's local event history stored in localStorage.
 - Emitted a workspace-clear sync event to ensure active components clear their local state and the terminal UI updates immediately to reflect the empty history.
+- Enabled workspace snapshot auto-restoration by default on app mount to prevent state loss and API disconnects when reloaded inside Google AI Studio iframes.
+- Implemented asynchronous persistence of generated images to IndexedDB, moving base64 records out of RAM cache to prevent memory bloat and iframe crashes.
+- Introduced asynchronous preloading of stored image records from IndexedDB prior to React mounting, securing synchronous URL accessibility on initial layout rendering.
+- Added a 5-second polling retry loop at startup to automatically detect and connect to asynchronously injected host API keys.
 
 ## v1.3.0 - 2026-05-18
 

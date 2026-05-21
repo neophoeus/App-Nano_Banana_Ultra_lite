@@ -5,6 +5,7 @@ import {
     DEFAULT_SAFETY_THRESHOLDS,
     GeneratedImage,
     GenerationFailureExtractionIssue,
+    ResultImagePart,
     ResultPart,
     SAFETY_CATEGORY_KEYS,
     SAFETY_THRESHOLD_KEYS,
@@ -22,7 +23,7 @@ import {
     getNormalizedConversationTurnIds,
     resolveConversationSelectionState,
 } from './conversationState';
-import { BrowserSavedImageRecordMap, collectBrowserSavedImageRecords, hydrateBrowserSavedImageRecords } from './browserImageStore';
+import { BrowserSavedImageRecordMap, collectBrowserSavedImageRecords, hydrateBrowserSavedImageRecords, loadBrowserSavedImageRecord } from './browserImageStore';
 import { normalizeGenerationFailureInfo, resolveDisplayGenerationFailureInfo } from './generationFailure';
 import { buildSavedImageLoadUrl } from './imageSaveUtils';
 import { sanitizeSessionHintsForStorage } from './inlineImageDisplay';
@@ -955,9 +956,10 @@ const sanitizeWorkspaceComposerState = (value: unknown): WorkspaceComposerState 
     }
 
     const normalizedSafetyThresholds = { ...DEFAULT_SAFETY_THRESHOLDS };
-    if (isRecord(value.safetyThresholds)) {
+    const safetyThresholds = value.safetyThresholds;
+    if (isRecord(safetyThresholds)) {
         SAFETY_CATEGORY_KEYS.forEach((categoryKey) => {
-            const threshold = value.safetyThresholds[categoryKey];
+            const threshold = safetyThresholds[categoryKey];
             if (isSafetyThresholdKey(threshold)) {
                 normalizedSafetyThresholds[categoryKey] = threshold;
             }
@@ -1085,6 +1087,33 @@ export const loadWorkspaceSnapshot = (): WorkspacePersistenceSnapshot => {
     } catch {
         return EMPTY_WORKSPACE_SNAPSHOT;
     }
+};
+
+export const preloadWorkspaceImagesToMemory = async (snapshot: WorkspacePersistenceSnapshot): Promise<void> => {
+    const filenames = new Set<string>();
+
+    snapshot.history.forEach((item) => {
+        if (item.savedFilename) filenames.add(item.savedFilename);
+        if (item.thumbnailSavedFilename) filenames.add(item.thumbnailSavedFilename);
+    });
+
+    snapshot.stagedAssets.forEach((asset) => {
+        if (asset.savedFilename) filenames.add(asset.savedFilename);
+    });
+
+    snapshot.workspaceSession.activeResult?.resultParts?.forEach((part) => {
+        if (part && (part.kind === 'thought-image' || part.kind === 'output-image')) {
+            const imagePart = part as ResultImagePart;
+            if (imagePart.savedFilename) {
+                filenames.add(imagePart.savedFilename);
+            }
+        }
+    });
+
+    // 非同步載入所有圖片至記憶體快取
+    await Promise.all(
+        Array.from(filenames).map((name) => loadBrowserSavedImageRecord(name).catch(() => null))
+    );
 };
 
 export const clearStoredWorkspaceSnapshot = (): void => {

@@ -146,6 +146,30 @@ const openBrowserImageDb = async (): Promise<IDBDatabase | null> => {
     return browserImageDbPromise;
 };
 
+const writeBrowserSavedImageRecordToDb = async (
+    savedFilename: string,
+    record: BrowserSavedImageRecord,
+): Promise<void> => {
+    const database = await openBrowserImageDb();
+    if (!database) {
+        return;
+    }
+
+    return await new Promise<void>((resolve) => {
+        try {
+            const transaction = database.transaction(BROWSER_IMAGE_DB_STORE, 'readwrite');
+            const store = transaction.objectStore(BROWSER_IMAGE_DB_STORE);
+            const request = store.put(record, savedFilename);
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+            transaction.oncomplete = () => resolve();
+            transaction.onabort = () => resolve();
+        } catch {
+            resolve();
+        }
+    });
+};
+
 const readBrowserSavedImageRecordFromDb = async (savedFilename: string): Promise<BrowserSavedImageRecord | null> => {
     const database = await openBrowserImageDb();
     if (!database) {
@@ -191,6 +215,7 @@ export const persistBrowserSavedImageRecord = async (
     };
 
     cacheBrowserSavedImageRecord(savedFilename, record);
+    void writeBrowserSavedImageRecordToDb(savedFilename, record);
 
     return `${BROWSER_SAVED_IMAGE_PATH_PREFIX}${savedFilename}`;
 };
@@ -223,7 +248,10 @@ export const collectBrowserSavedImageRecords = async (
     );
 
     const resolvedEntries = await Promise.all(
-        uniqueSavedFilenames.map(async (savedFilename) => [savedFilename, await loadBrowserSavedImageRecord(savedFilename)]),
+        uniqueSavedFilenames.map(
+            async (savedFilename) =>
+                [savedFilename, await loadBrowserSavedImageRecord(savedFilename)] as [string, BrowserSavedImageRecord | null],
+        ),
     );
 
     return resolvedEntries.reduce<BrowserSavedImageRecordMap>((records, [savedFilename, record]) => {
