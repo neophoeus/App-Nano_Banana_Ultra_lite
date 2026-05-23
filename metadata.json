@@ -1,5 +1,6 @@
 {
     "name": "Nano Banana Ultra lite",
     "description": "A lite release for the browser-only frontend edition of Nano Banana Ultra.",
-    "requestFramePermissions": []
+    "requestFramePermissions": [],
+    "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

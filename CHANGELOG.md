@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.2 - 2026-05-23
+
+- Upgraded the prompt enhancer, random prompt generator, and image-to-prompt converter to use the official `gemini-3.5-flash` model instead of the older `gemini-3-flash-preview` model.
+- Updated the content safety keywords identifier (`identifyBlockKeywords`) to use the official `gemini-3.5-flash` model.
+- Added a custom `httpOptions` header `User-Agent: aistudio-build` when initializing the Google GenAI client in the service manager.
+- Configured `"MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"` under `majorCapabilities` in metadata config to declare backend Gemini API capability.
+- Added missing error toast notification (`showNotification`) to `handleSurpriseMe` failure paths in the Lite prompt tools hook.
+- De-structured the image-to-prompt converter output to yield only a pure, highly detailed, and accurate image prompt instead of a multi-section structured brief, preventing headings from polluting the composer.
+- Redesigned the random prompt generator scaffolds to employ a 3-tier hybrid strategy (completely open-ended generation, semi-structured template fill-in, and anti-common-sense pairing strategy) to increase output surprise and variety while translating output to the active UI language.
+- Simplified outbound prompt helper request payloads inside `geminiService.ts` to reduce rules redundancy, prevent instruction conflicts, and optimize token usage.
+- Integrated style sensitivity guidelines to protect non-photorealistic art mediums (Anime, vector graphics, line art, watercolor) from being overwritten with realistic photographic terms (such as 35mm lens, realistic fur/skin texture, cinematic lighting) during prompt enhancement and random generation.
+
 ## v1.3.1 - 2026-05-21
 
 - Added workspace reset terminal synchronization, so clearing the workspace now automatically cleans up the diagnostics terminal's local event history stored in localStorage.

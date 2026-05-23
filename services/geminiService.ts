@@ -579,7 +579,14 @@ const getGeminiClient = (): GoogleGenAI => {
         }
     }
 
-    return new GoogleGenAI({ apiKey });
+    return new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+            headers: {
+                'User-Agent': 'aistudio-build',
+            },
+        },
+    });
 };
 
 const prepareBrowserGenerateRequest = async (
@@ -1336,15 +1343,13 @@ export const enhancePromptWithGemini = async (
     const requestId = createDebugRequestId();
     const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         config: {
             systemInstruction: buildPromptEnhancerInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
             temperature: 0.35,
         },
-        contents:
-            `Current prompt: ${currentPrompt || 'A creative image'}\n\n` +
-            'Rewrite the prompt entirely in the requested UI language while preserving the same concept. Return only the final prompt text. You may use one dense paragraph or a few prompt-only lines separated by line breaks if that improves detail and clarity. No analysis, commentary, headings, or labels.',
+        contents: `Original prompt to rewrite: "${currentPrompt || 'A creative image'}"`,
     };
 
     emitGenerationDebugEvent({
@@ -1399,7 +1404,7 @@ export const generateRandomPrompt = async (
     const requestId = createDebugRequestId();
     const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         config: {
             systemInstruction: buildRandomPromptInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
@@ -1465,7 +1470,7 @@ export const generatePromptFromImage = async (
     const requestId = createDebugRequestId();
     const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         config: {
             systemInstruction: buildImageToPromptInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
@@ -1474,7 +1479,7 @@ export const generatePromptFromImage = async (
         contents: [
             { inlineData: inlineImage },
             {
-                text: 'Analyze this image carefully and return a structured image-to-prompt brief in the requested UI language. Describe only details that are visible or strongly supported by the image. If something is uncertain, say so instead of guessing. Keep the final section as a polished generation-ready prompt paragraph in the requested language unless you are quoting visible text.',
+                text: 'Analyze this image carefully and generate a highly detailed, extremely accurate image prompt in the requested language describing it. Output only the prompt itself without any headings, labels, sections, or commentary.',
             },
         ],
     };
