@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.3 - 2026-05-24
+
+- Implemented an LRU cache eviction mechanism for the browser-managed image memory cache, limiting full-resolution images to a maximum of 10 in memory to prevent frontend memory overload (OOM) and tab crashes during continuous generation inside Google AI Studio.
+- Optimized startup image preloading to load only image thumbnails and the currently selected active image instead of preloading all historical full-resolution images, drastically reducing memory footprint at app startup.
+- Enhanced the aggressive workspace snapshot pruning strategy to clear diagnostic logs and strip heavy text fields (thoughts, resultParts, grounding, and sessionHints) from non-selected history items when the local snapshot exceeds the browser storage limit.
+- Wrapped direct `localStorage.getItem` access inside `loadWorkspaceSnapshot` with `try-catch` blocks to prevent React application boot crashes in restricted or sandboxed iframe environments.
+
 ## v1.3.2 - 2026-05-23
 
 - Upgraded the prompt enhancer, random prompt generator, and image-to-prompt converter to use the official `gemini-3.5-flash` model instead of the older `gemini-3-flash-preview` model.

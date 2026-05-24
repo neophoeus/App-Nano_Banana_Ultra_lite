@@ -113,6 +113,30 @@ const readBrowserSavedImageRecordFromStorage = (
 
 const cacheBrowserSavedImageRecord = (savedFilename: string, record: BrowserSavedImageRecord): void => {
     browserSavedImageCache.set(savedFilename, record);
+
+    // Evict oldest full-resolution images if memory cache exceeds a limit (e.g. 10 full-res images)
+    // Thumbnails have filenames containing '-thumbnail' - we do NOT evict them
+    const fullResKeys: string[] = [];
+    for (const key of browserSavedImageCache.keys()) {
+        if (!key.includes('-thumbnail')) {
+            fullResKeys.push(key);
+        }
+    }
+
+    if (fullResKeys.length > 10) {
+        // Sort by savedAt ascending (oldest first)
+        const sortedKeys = fullResKeys.sort((a, b) => {
+            const recA = browserSavedImageCache.get(a);
+            const recB = browserSavedImageCache.get(b);
+            return (recA?.savedAt || 0) - (recB?.savedAt || 0);
+        });
+
+        // Evict the oldest ones until we have at most 10
+        const toEvictCount = sortedKeys.length - 10;
+        for (let i = 0; i < toEvictCount; i++) {
+            browserSavedImageCache.delete(sortedKeys[i]);
+        }
+    }
 };
 
 const openBrowserImageDb = async (): Promise<IDBDatabase | null> => {

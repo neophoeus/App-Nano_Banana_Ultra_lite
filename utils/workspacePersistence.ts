@@ -592,18 +592,42 @@ const buildPersistableWorkspaceSnapshot = (
     const restoredStageUrl =
         filteredGeneratedImageUrls[0] || currentStageAsset?.url || selectedHistoryItem?.url || null;
 
+    let finalHistory = options?.aggressive
+        ? historyWithLinkedAssets.map((item) => {
+              const isSelected = item.id === normalized.viewState.selectedHistoryId;
+              return {
+                  ...item,
+                  url: isInlineAssetUrl(item.url) ? '' : item.url,
+                  // In aggressive mode, strip heavy text and media references for non-selected history items
+                  ...(!isSelected
+                      ? {
+                            thoughts: '',
+                            text: '',
+                            resultParts: undefined,
+                            grounding: undefined,
+                            sessionHints: undefined,
+                        }
+                      : {}),
+              };
+          })
+        : historyWithLinkedAssets;
+
+    // Limit history length in aggressive mode to protect localStorage quota
+    if (options?.aggressive && finalHistory.length > 25) {
+        const selectedId = normalized.viewState.selectedHistoryId;
+        const selectedIndex = finalHistory.findIndex((item) => item.id === selectedId);
+
+        const recentHistory = finalHistory.slice(0, 25);
+        if (selectedId && selectedIndex >= 25 && finalHistory[selectedIndex]) {
+            recentHistory.push(finalHistory[selectedIndex]);
+        }
+        finalHistory = recentHistory;
+    }
+
     return sanitizeWorkspaceSnapshot({
         ...normalized,
-        history: options?.aggressive
-            ? historyWithLinkedAssets.map((item) =>
-                  isInlineAssetUrl(item.url)
-                      ? {
-                            ...item,
-                            url: '',
-                        }
-                      : item,
-              )
-            : historyWithLinkedAssets,
+        workflowLogs: options?.aggressive ? [] : normalized.workflowLogs,
+        history: finalHistory,
         stagedAssets: options?.aggressive
             ? stagedAssetsWithLinkedAssets.map((asset) =>
                   isInlineAssetUrl(asset.url)
@@ -1051,7 +1075,12 @@ export const sanitizeWorkspaceSnapshot = (value: unknown): WorkspacePersistenceS
 };
 
 export const loadWorkspaceSnapshot = (): WorkspacePersistenceSnapshot => {
-    const raw = localStorage.getItem(WORKSPACE_SNAPSHOT_STORAGE_KEY);
+    let raw: string | null = null;
+    try {
+        raw = localStorage.getItem(WORKSPACE_SNAPSHOT_STORAGE_KEY);
+    } catch (error) {
+        console.warn('[workspacePersistence] Failed to read from localStorage. Storage access may be restricted.', error);
+    }
 
     if (!raw) {
         return {
@@ -1059,12 +1088,11 @@ export const loadWorkspaceSnapshot = (): WorkspacePersistenceSnapshot => {
             branchState: {
                 nameOverrides: sanitizeBranchNameOverrides(
                     (() => {
-                        const legacyRaw = localStorage.getItem(LEGACY_BRANCH_NAME_OVERRIDES_STORAGE_KEY);
-                        if (!legacyRaw) {
-                            return undefined;
-                        }
-
                         try {
+                            const legacyRaw = localStorage.getItem(LEGACY_BRANCH_NAME_OVERRIDES_STORAGE_KEY);
+                            if (!legacyRaw) {
+                                return undefined;
+                            }
                             return JSON.parse(legacyRaw);
                         } catch {
                             return undefined;
@@ -1092,15 +1120,31 @@ export const loadWorkspaceSnapshot = (): WorkspacePersistenceSnapshot => {
 export const preloadWorkspaceImagesToMemory = async (snapshot: WorkspacePersistenceSnapshot): Promise<void> => {
     const filenames = new Set<string>();
 
+    // 1. Only preload thumbnails for history items to keep memory footprint low at startup
     snapshot.history.forEach((item) => {
-        if (item.savedFilename) filenames.add(item.savedFilename);
-        if (item.thumbnailSavedFilename) filenames.add(item.thumbnailSavedFilename);
+        if (item.thumbnailSavedFilename) {
+            filenames.add(item.thumbnailSavedFilename);
+        } else if (item.savedFilename) {
+            // Fallback: preload the full image only if there's no thumbnail available
+            filenames.add(item.savedFilename);
+        }
     });
 
+    // 2. Preload the currently selected history item's full resolution image so it displays immediately on stage
+    const selectedId = snapshot.viewState.selectedHistoryId;
+    if (selectedId) {
+        const selectedItem = snapshot.history.find((item) => item.id === selectedId);
+        if (selectedItem?.savedFilename) {
+            filenames.add(selectedItem.savedFilename);
+        }
+    }
+
+    // 3. Preload reference assets (objects, characters)
     snapshot.stagedAssets.forEach((asset) => {
         if (asset.savedFilename) filenames.add(asset.savedFilename);
     });
 
+    // 4. Preload active result parts
     snapshot.workspaceSession.activeResult?.resultParts?.forEach((part) => {
         if (part && (part.kind === 'thought-image' || part.kind === 'output-image')) {
             const imagePart = part as ResultImagePart;
