@@ -1474,12 +1474,12 @@ export const generatePromptFromImage = async (
         config: {
             systemInstruction: buildImageToPromptInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
-            temperature: 0.25,
+            temperature: 0.3,
         },
         contents: [
             { inlineData: inlineImage },
             {
-                text: 'Analyze this image carefully and generate a highly detailed, extremely accurate image prompt in the requested language describing it. Output only the prompt itself without any headings, labels, sections, or commentary.',
+                text: 'Analyze this image carefully and generate a highly detailed, extremely accurate image prompt in the requested language describing it. Focus on absolute forensic precision, documenting every single detail, object, texture, color shade, camera setting, and art medium characteristic without summarization. Output only the prompt itself without any headings, labels, sections, or commentary.',
             },
         ],
     };

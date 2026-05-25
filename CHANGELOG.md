@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.4 - 2026-05-25
+
+- Enhanced the "Image to Prompt" feature detail resolution by incorporating a strict Visual Forensic Protocol in the system instructions to explicitly extract subject expressions, fabric/surface textures, multi-layer background elements, precise color hues, camera focus, and rendering properties.
+- Micro-adjusted the generation temperature to 0.3 and enhanced the user prompt for forensic-level details.
+- Fixed a language switch bug where the "Image to Prompt" (Image-to-Prompt) tool would still generate English prompts on the first language switch. Wrapped `onImageToPrompt` with an arrow function to ensure it dynamically resolves to the latest handler reference instead of capturing a stale reference.
+
 ## v1.3.3 - 2026-05-24
 
 - Implemented an LRU cache eviction mechanism for the browser-managed image memory cache, limiting full-resolution images to a maximum of 10 in memory to prevent frontend memory overload (OOM) and tab crashes during continuous generation inside Google AI Studio.

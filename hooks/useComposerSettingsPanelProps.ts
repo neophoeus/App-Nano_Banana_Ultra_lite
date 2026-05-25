@@ -215,7 +215,9 @@ export function useComposerSettingsPanelProps({
             onFollowUpGenerate: () => latestHandlersRef.current.handleFollowUpGenerate(),
             onSurpriseMe: () => latestHandlersRef.current.handleSurpriseMe(),
             onSmartRewrite: () => latestHandlersRef.current.handleSmartRewrite(),
-            onImageToPrompt: latestHandlersRef.current.handleImageToPrompt,
+            onImageToPrompt: handleImageToPrompt
+                ? (file: File) => latestHandlersRef.current.handleImageToPrompt?.(file)
+                : undefined,
             onOpenStyles: () => latestHandlersRef.current.setActivePickerSheet('styles'),
             onOpenSettings: () => latestHandlersRef.current.openSettings(),
             onToggleAdvancedSettings: () => latestHandlersRef.current.openAdvancedSettings(),
@@ -249,6 +251,7 @@ export function useComposerSettingsPanelProps({
             generateLabel,
             promptTextareaRef,
             getModelLabel,
+            handleImageToPrompt,
             getStageOriginLabel,
             getLineageActionLabel,
         ],
