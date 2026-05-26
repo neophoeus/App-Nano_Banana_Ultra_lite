@@ -131,7 +131,7 @@ export default function WorkspaceViewerOverlay({
                 </button>
 
                 <div className="grid min-h-0 flex-1 grid-rows-[minmax(48vh,1fr)_minmax(0,auto)] gap-0 overflow-hidden border border-slate-200/80 bg-white/96 shadow-[0_30px_100px_rgba(15,23,42,0.2)] dark:border-white/10 dark:bg-[#05070b] dark:shadow-2xl sm:rounded-[28px] lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-1">
-                    <div className="relative flex min-h-0 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.18),_transparent_38%),linear-gradient(180deg,_#f8fafc_0%,_#dbe4f0_100%)] px-3 pb-3 pt-14 dark:bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.15),_transparent_35%),linear-gradient(180deg,_#0c1118_0%,_#040608_100%)] sm:px-4 sm:pb-4 sm:pt-16 lg:pt-4">
+                    <div className="relative flex h-full w-full min-h-0 items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.18),_transparent_38%),linear-gradient(180deg,_#f8fafc_0%,_#dbe4f0_100%)] px-3 pb-3 pt-14 dark:bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.15),_transparent_35%),linear-gradient(180deg,_#0c1118_0%,_#040608_100%)] sm:px-4 sm:pb-4 sm:pt-16 lg:pt-4">
                         {activeViewerIsFresh ? (
                             <span
                                 data-testid="workspace-viewer-new-badge"
@@ -162,7 +162,7 @@ export default function WorkspaceViewerOverlay({
                             src={activeViewerImage}
                             alt={displayPrompt || t('workspaceViewerImageAlt')}
                             className="max-h-full max-w-full rounded-[24px] border border-white/70 object-contain shadow-[0_24px_80px_rgba(15,23,42,0.22)] dark:border-white/10 dark:shadow-2xl"
-                            wrapperClassName="max-h-full max-w-full flex items-center justify-center"
+                            wrapperClassName="h-full w-full flex items-center justify-center"
                             placeholderClassName="h-64 w-64 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 rounded-[24px]"
                         />
                     </div>

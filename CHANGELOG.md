@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.6 - 2026-05-26
+
+- **Fullscreen Image Viewer Overflow Fix**: Fixed fullscreen image viewer overflow issue in `WorkspaceViewerOverlay.tsx` by adding `h-full w-full` styling constraints to the image container and the image wrapper element.
+
 ## v1.3.5 - 2026-05-26
 
 - **Performance Improvement & Memory Optimization**: Implemented an LRU cache eviction mechanism for thumbnail image cache (limited to 40 items). Introduced a lightweight virtual URL schema (`/lite/session-images/...`) for React state history turns to replace heavy inline base64 image data. Added asynchronous image resolution inside `LazyHistoryImage` and Gemini API request wrapper to resolve virtual paths to IndexedDB blobs on-demand, resolving frontend OOM crashes and tab load issues under continuous generations.
