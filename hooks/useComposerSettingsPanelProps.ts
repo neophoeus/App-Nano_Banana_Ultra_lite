@@ -37,7 +37,7 @@ type UseComposerSettingsPanelPropsArgs = {
     batchSize: number;
     currentStageAsset: StageAsset | null;
     capability: ComposerSettingsPanelProps['capability'];
-    availableGroundingModes: GroundingMode[];
+    availableGroundingModes: readonly GroundingMode[];
     temperature: number;
     isAdvancedSettingsOpen: boolean;
     generateLabel: string;

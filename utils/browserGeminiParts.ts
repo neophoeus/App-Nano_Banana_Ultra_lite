@@ -1,5 +1,6 @@
 import type { ConversationImageAssetReference, ConversationRequestContext } from '../types';
 import { buildSavedImageLoadUrl } from './imageSaveUtils';
+import { loadBrowserSavedImageDataUrl, BROWSER_SAVED_IMAGE_PATH_PREFIX } from './browserImageStore';
 
 const DATA_URL_PATTERN = /^data:([^;]+);base64,(.+)$/i;
 const RAW_BASE64_PATTERN = /^[A-Za-z0-9+/=]+$/u;
@@ -71,6 +72,19 @@ export const resolveBrowserInlineImage = async (imageSource: string): Promise<Br
     const trimmedSource = imageSource.trim();
     if (!trimmedSource) {
         throw new Error('Image input was empty.');
+    }
+
+    if (trimmedSource.startsWith(BROWSER_SAVED_IMAGE_PATH_PREFIX)) {
+        const filename = trimmedSource.split(/[\\/]/).pop();
+        if (filename) {
+            const dataUrl = await loadBrowserSavedImageDataUrl(filename);
+            if (dataUrl) {
+                const inlineImage = parseInlineImageDataUrl(dataUrl);
+                if (inlineImage) {
+                    return inlineImage;
+                }
+            }
+        }
     }
 
     const inlineImage = parseInlineImageDataUrl(trimmedSource);

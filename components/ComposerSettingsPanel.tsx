@@ -40,7 +40,7 @@ export type ComposerSettingsPanelProps = {
     stickySendIntent: StickySendIntent;
     currentStageAsset: StageAsset | null;
     capability: (typeof MODEL_CAPABILITIES)[ImageModel];
-    availableGroundingModes: GroundingMode[];
+    availableGroundingModes: readonly GroundingMode[];
     temperature: number;
     isAdvancedSettingsOpen: boolean;
     generateLabel: string;

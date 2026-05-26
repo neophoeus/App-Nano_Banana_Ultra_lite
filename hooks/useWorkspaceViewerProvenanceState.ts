@@ -6,6 +6,8 @@ import {
     ImageModel,
     ImageStyle,
     ViewerComposerSettingsSnapshot,
+    OutputFormat,
+    ThinkingLevel,
 } from '../types';
 import { deriveGroundingMode, getGroundingModeTranslationKey } from '../utils/groundingMode';
 import {

@@ -460,7 +460,7 @@ export function useWorkspaceStageViewer({
                 currentLog: showStageGeneratingState ? currentLog : '',
                 onOpenViewer: isGenerating ? undefined : openViewer,
                 stageTopRight,
-            }) satisfies GeneratedImageStageProps,
+            }) as any,
         [
             currentLanguage,
             currentLog,

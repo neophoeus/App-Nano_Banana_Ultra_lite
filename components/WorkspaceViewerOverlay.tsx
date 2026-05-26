@@ -6,6 +6,7 @@ import { getTranslation, Language } from '../utils/translations';
 import { useOverlayEscapeDismiss } from '../hooks/useOverlayEscapeDismiss';
 import { useOverlayFocusTrap } from '../hooks/useOverlayFocusTrap';
 import { useOverlayScrollLock } from '../hooks/useOverlayScrollLock';
+import LazyHistoryImage from './LazyHistoryImage';
 
 type SessionHintEntry = [string, unknown];
 
@@ -157,10 +158,12 @@ export default function WorkspaceViewerOverlay({
                             </>
                         )}
 
-                        <img
+                        <LazyHistoryImage
                             src={activeViewerImage}
                             alt={displayPrompt || t('workspaceViewerImageAlt')}
                             className="max-h-full max-w-full rounded-[24px] border border-white/70 object-contain shadow-[0_24px_80px_rgba(15,23,42,0.22)] dark:border-white/10 dark:shadow-2xl"
+                            wrapperClassName="max-h-full max-w-full flex items-center justify-center"
+                            placeholderClassName="h-64 w-64 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 rounded-[24px]"
                         />
                     </div>
 

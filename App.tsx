@@ -97,7 +97,12 @@ import {
 import { buildResultPartFilenameStem, buildSavedImageFilenameStem } from './utils/savedImageFilename';
 import { downloadImageSource, downloadJsonDocument, stripFilenameExtension } from './utils/browserDownload';
 import { WORKSPACE_OVERLAY_Z_INDEX } from './constants/workspaceOverlays';
-import { clearBrowserSavedImageRecords } from './utils/browserImageStore';
+import {
+    clearBrowserSavedImageRecords,
+    loadBrowserSavedImageDataUrl,
+    findSavedFilenameByDataUrl,
+    BROWSER_SAVED_IMAGE_PATH_PREFIX,
+} from './utils/browserImageStore';
 
 const ImageEditor = lazy(() => import('./components/ImageEditor'));
 const GeneratedImage = lazy(() => import('./components/GeneratedImage'));
@@ -1880,11 +1885,20 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const handleDownloadStageImage = useCallback(
         async (imageUrl: string) => {
             try {
+                let filename: string | undefined = undefined;
+                if (imageUrl.startsWith(BROWSER_SAVED_IMAGE_PATH_PREFIX)) {
+                    filename = imageUrl.slice(BROWSER_SAVED_IMAGE_PATH_PREFIX.length);
+                } else if (imageUrl.startsWith('data:')) {
+                    filename = findSavedFilenameByDataUrl(imageUrl) || undefined;
+                }
+
                 const matchedHistoryItem =
                     history.find(
                         (item) =>
                             item.status === 'success' &&
-                            (item.savedFilename ? buildSavedImageLoadUrl(item.savedFilename) : item.url) === imageUrl,
+                            (filename
+                                ? item.savedFilename === filename || item.thumbnailSavedFilename === filename
+                                : (item.savedFilename ? buildSavedImageLoadUrl(item.savedFilename) : item.url) === imageUrl),
                     ) || null;
                 const preferredMetadata =
                     matchedHistoryItem?.id === currentViewedCompletedHistoryItem?.id
@@ -1908,8 +1922,18 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
                     batchSize: stageViewerSettings.batchSize,
                 });
                 const baseMetadata = preferredMetadata || persistedHistoryMetadata || fallbackMetadata;
-                const imageFilename = await downloadImageSource(imageUrl, {
-                    filename: matchedHistoryItem?.savedFilename,
+
+                let downloadUrl = imageUrl;
+                if (imageUrl.startsWith(BROWSER_SAVED_IMAGE_PATH_PREFIX)) {
+                    const fn = imageUrl.slice(BROWSER_SAVED_IMAGE_PATH_PREFIX.length);
+                    const dbDataUrl = await loadBrowserSavedImageDataUrl(fn);
+                    if (dbDataUrl) {
+                        downloadUrl = dbDataUrl;
+                    }
+                }
+
+                const imageFilename = await downloadImageSource(downloadUrl, {
+                    filename: matchedHistoryItem?.savedFilename || filename,
                     filenameStem: buildSavedImageFilenameStem({
                         model: matchedHistoryItem?.model || stageViewerSettings.model,
                         mode: matchedHistoryItem?.mode || generationMode,
@@ -1970,7 +1994,21 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         }: WorkspaceProgressThoughtImageDownloadRequest) => {
             try {
                 const historyItem = getHistoryTurnById(entryId);
-                await downloadImageSource(imageUrl, {
+                let downloadUrl = imageUrl;
+                if (imageUrl.startsWith(BROWSER_SAVED_IMAGE_PATH_PREFIX)) {
+                    const fn = imageUrl.slice(BROWSER_SAVED_IMAGE_PATH_PREFIX.length);
+                    const dbDataUrl = await loadBrowserSavedImageDataUrl(fn);
+                    if (dbDataUrl) {
+                        downloadUrl = dbDataUrl;
+                    }
+                } else if (!imageUrl && savedFilename) {
+                    const dbDataUrl = await loadBrowserSavedImageDataUrl(savedFilename);
+                    if (dbDataUrl) {
+                        downloadUrl = dbDataUrl;
+                    }
+                }
+
+                await downloadImageSource(downloadUrl, {
                     filename: savedFilename,
                     filenameStem: buildResultPartFilenameStem({
                         model: historyItem?.model || stageViewerSettings.model,

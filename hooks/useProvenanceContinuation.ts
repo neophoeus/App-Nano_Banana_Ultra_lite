@@ -138,7 +138,7 @@ export function useProvenanceContinuation({
             return;
         }
 
-        const latestSuccessful = history.reduce<ResultArtifacts['historyId'] extends string ? (typeof history)[number] | null : never>(
+        const latestSuccessful = history.reduce<GeneratedImage | null>(
             (latestItem, item) => {
                 if (item.status !== 'success') {
                     return latestItem;

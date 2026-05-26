@@ -47,7 +47,7 @@ type ComposerAdvancedSettingsContentProps = {
     safetyThresholds: SafetyThresholds;
     imageModel: ImageModel;
     capability: (typeof MODEL_CAPABILITIES)[ImageModel];
-    availableGroundingModes: GroundingMode[];
+    availableGroundingModes: readonly GroundingMode[];
     temperature: number;
     onOutputFormatChange: (value: OutputFormat) => void;
     onTemperatureChange: (value: number) => void;

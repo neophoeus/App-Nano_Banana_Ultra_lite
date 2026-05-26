@@ -24,7 +24,7 @@ type SurfaceSharedControlsProps = {
     totalReferenceCount: number;
     hasPrompt: boolean;
     capability: ModelCapability;
-    availableGroundingModes: GroundingMode[];
+    availableGroundingModes: readonly GroundingMode[];
     modelLabel: string;
     aspectRatio: string;
     imageSize: string;

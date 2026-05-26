@@ -125,19 +125,24 @@ const normalizeGeneratedResponseCandidate = (candidate: any): NormalizedGenerate
     };
 };
 
-const toPublicResultPart = (part: ExtractedResponsePart): ResultPart =>
-    part.kind === 'thought-text' || part.kind === 'output-text'
-        ? {
-              sequence: part.sequence,
-              kind: part.kind,
-              text: part.text,
-          }
-        : {
-              sequence: part.sequence,
-              kind: part.kind,
-              imageUrl: part.imageUrl,
-              mimeType: part.mimeType,
-          };
+const toPublicResultPart = (part: ExtractedResponsePart): ResultPart => {
+    if (part.kind === 'thought-text' || part.kind === 'output-text') {
+        return {
+            sequence: part.sequence,
+            kind: part.kind,
+            text: part.text,
+        };
+    }
+    if (part.kind === 'thought-image' || part.kind === 'output-image') {
+        return {
+            sequence: part.sequence,
+            kind: part.kind,
+            imageUrl: part.imageUrl,
+            mimeType: part.mimeType,
+        };
+    }
+    throw new Error(`Unexpected part kind: ${(part as any).kind}`);
+};
 
 const extractResponsePartsFromCandidates = (candidates: NormalizedGeneratedResponseCandidate[]) => {
     const extractedParts: ExtractedResponsePart[] = [];

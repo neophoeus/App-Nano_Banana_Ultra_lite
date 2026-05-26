@@ -115,10 +115,12 @@ const cacheBrowserSavedImageRecord = (savedFilename: string, record: BrowserSave
     browserSavedImageCache.set(savedFilename, record);
 
     // Evict oldest full-resolution images if memory cache exceeds a limit (e.g. 10 full-res images)
-    // Thumbnails have filenames containing '-thumbnail' - we do NOT evict them
     const fullResKeys: string[] = [];
+    const thumbnailKeys: string[] = [];
     for (const key of browserSavedImageCache.keys()) {
-        if (!key.includes('-thumbnail')) {
+        if (key.includes('-thumbnail')) {
+            thumbnailKeys.push(key);
+        } else {
             fullResKeys.push(key);
         }
     }
@@ -135,6 +137,22 @@ const cacheBrowserSavedImageRecord = (savedFilename: string, record: BrowserSave
         const toEvictCount = sortedKeys.length - 10;
         for (let i = 0; i < toEvictCount; i++) {
             browserSavedImageCache.delete(sortedKeys[i]);
+        }
+    }
+
+    // Evict oldest thumbnails if thumbnail memory cache exceeds a limit (e.g. 40 thumbnails)
+    if (thumbnailKeys.length > 40) {
+        // Sort by savedAt ascending (oldest first)
+        const sortedThumbnailKeys = thumbnailKeys.sort((a, b) => {
+            const recA = browserSavedImageCache.get(a);
+            const recB = browserSavedImageCache.get(b);
+            return (recA?.savedAt || 0) - (recB?.savedAt || 0);
+        });
+
+        // Evict the oldest ones until we have at most 40
+        const toEvictCount = sortedThumbnailKeys.length - 40;
+        for (let i = 0; i < toEvictCount; i++) {
+            browserSavedImageCache.delete(sortedThumbnailKeys[i]);
         }
     }
 };
@@ -351,7 +369,16 @@ export const clearBrowserSavedImageRecords = async ({ includeMemory = true } = {
 };
 
 export const buildBrowserSavedImageLoadUrl = (savedFilename: string): string =>
-    readBrowserSavedImageRecordSync(savedFilename)?.dataUrl || '';
+    `${BROWSER_SAVED_IMAGE_PATH_PREFIX}${savedFilename}`;
+
+export const findSavedFilenameByDataUrl = (dataUrl: string): string | undefined => {
+    for (const [filename, record] of browserSavedImageCache.entries()) {
+        if (record.dataUrl === dataUrl) {
+            return filename;
+        }
+    }
+    return undefined;
+};
 
 export const loadBrowserSavedImageDataUrl = async (savedFilename: string): Promise<string | null> =>
     (await loadBrowserSavedImageRecord(savedFilename))?.dataUrl || null;

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.5 - 2026-05-26
+
+- **Performance Improvement & Memory Optimization**: Implemented an LRU cache eviction mechanism for thumbnail image cache (limited to 40 items). Introduced a lightweight virtual URL schema (`/lite/session-images/...`) for React state history turns to replace heavy inline base64 image data. Added asynchronous image resolution inside `LazyHistoryImage` and Gemini API request wrapper to resolve virtual paths to IndexedDB blobs on-demand, resolving frontend OOM crashes and tab load issues under continuous generations.
+- **Full TypeScript Type & Test Fixes**: Resolved strict compiler warnings and compile errors across components and Vitest tests, including union type narrowings, implicit `any` parameter definitions, mock property alignments, and callback closures causing TypeScript control flow analyzer to narrow properties to `never`. Secured complete test file compliance (716/716 passed).
+
 ## v1.3.4 - 2026-05-25
 
 - Enhanced the "Image to Prompt" feature detail resolution by incorporating a strict Visual Forensic Protocol in the system instructions to explicitly extract subject expressions, fabric/surface textures, multi-layer background elements, precise color hues, camera focus, and rendering properties.

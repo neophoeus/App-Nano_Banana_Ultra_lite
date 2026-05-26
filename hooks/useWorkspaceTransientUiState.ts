@@ -83,7 +83,7 @@ export function useWorkspaceTransientUiState({
             ratio: editorContextSnapshot?.editorInitialRatio || editorContextSnapshot?.ratio || aspectRatio,
             size: editorContextSnapshot?.editorInitialSize || editorContextSnapshot?.size || imageSize,
             batchSize: editorContextSnapshot?.batchSize || batchSize,
-        }),
+        } as any),
         [aspectRatio, batchSize, characterImages, editorContextSnapshot, imageSize, objectImages],
     );
 

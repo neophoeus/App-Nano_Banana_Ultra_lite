@@ -501,7 +501,9 @@ export type SelectedItemSummaryStripChipKey =
     | 'aspect-ratio'
     | 'execution-mode'
     | 'mode'
-    | 'created-at';
+    | 'created-at'
+    | 'memory'
+    | 'thread';
 
 export type SelectedItemSummaryStripChipGroup = 'status' | 'core' | 'tail';
 

@@ -55,7 +55,7 @@ const WorkspaceImportReview: React.FC<WorkspaceImportReviewProps> = ({
     const secondaryActionClassName = 'nbu-control-button px-3 py-1.5 text-[11px] font-semibold';
     const locale = currentLanguage === 'zh_TW' ? 'zh-TW' : currentLanguage === 'zh_CN' ? 'zh-CN' : currentLanguage;
 
-    const formatDateTime = (value: string) => new Date(value).toLocaleString(locale);
+    const formatDateTime = (value: string | number) => new Date(value).toLocaleString(locale);
     const renderPromptPreview = (value?: string | null, limit = 120) => {
         if (!value) {
             return t('workspaceImportReviewNoPromptSaved');

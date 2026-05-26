@@ -4,8 +4,9 @@ import HexagonHUD from './HexagonHUD';
 import { AspectRatio, ExecutionMode, ImageSize, ImageStyle, StageErrorState } from '../types';
 import { normalizeGenerationModeKind, resolveGenerationModeLabel } from '../utils/generationMode';
 import { Language, getTranslation } from '../utils/translations';
+import { loadBrowserSavedImageDataUrl, BROWSER_SAVED_IMAGE_PATH_PREFIX } from '../utils/browserImageStore';
 
-export type StageTopRightChipKey = 'current-source' | 'origin' | 'branch' | 'continuation-differs' | 'result-status';
+export type StageTopRightChipKey = 'current-source' | 'stage-source' | 'origin' | 'branch' | 'continuation-differs' | 'result-status';
 export type StageTopRightChipTone = 'source' | 'branch' | 'divergence' | 'warning' | 'success';
 
 export interface StageTopRightChip {
@@ -50,6 +51,7 @@ interface GeneratedImageProps {
         size: ImageSize;
         style: ImageStyle;
         batchSize?: number;
+        model?: string;
     };
     aspectRatio?: AspectRatio;
     imageSize?: ImageSize;
@@ -92,7 +94,7 @@ const stageTopRightOverflowChipClassNameByTone: Record<StageTopRightChipTone, st
 };
 
 const stageTopRightVisibleActionClassNameByEmphasis: Record<
-    Exclude<StageTopRightActionEmphasis, 'destructive'>,
+    StageTopRightActionEmphasis,
     string
 > = {
     primary:
@@ -101,6 +103,8 @@ const stageTopRightVisibleActionClassNameByEmphasis: Record<
         'border-gray-300 bg-gray-200 text-gray-800 hover:border-gray-400 hover:bg-gray-300 dark:border-gray-500 dark:bg-gray-600 dark:text-white dark:hover:border-gray-400 dark:hover:bg-gray-500',
     passive:
         'cursor-default border-gray-300 bg-gray-200 text-gray-700 dark:border-gray-500 dark:bg-gray-600 dark:text-white',
+    destructive:
+        'border-rose-300 bg-rose-200 text-rose-800 hover:border-rose-400 hover:bg-rose-300 dark:border-rose-500 dark:bg-rose-600 dark:text-white dark:hover:border-rose-400 dark:hover:bg-rose-500',
 };
 
 const stageTopRightOverflowTriggerClassName =
@@ -136,6 +140,41 @@ const GeneratedImage: React.FC<GeneratedImageProps> = ({
     const t = (key: string) => getTranslation(currentLanguage, key);
 
     const activeImage = selectedImageUrl || (imageUrls.length > 0 ? imageUrls[0] : '');
+
+    const [resolvedActiveImage, setResolvedActiveImage] = React.useState<string>('');
+
+    React.useEffect(() => {
+        if (!activeImage) {
+            setResolvedActiveImage('');
+            return;
+        }
+
+        if (activeImage.startsWith('data:')) {
+            setResolvedActiveImage(activeImage);
+            return;
+        }
+
+        if (activeImage.startsWith(BROWSER_SAVED_IMAGE_PATH_PREFIX)) {
+            const filename = activeImage.slice(BROWSER_SAVED_IMAGE_PATH_PREFIX.length);
+            let active = true;
+            loadBrowserSavedImageDataUrl(filename)
+                .then((dataUrl) => {
+                    if (active && dataUrl) {
+                        setResolvedActiveImage(dataUrl);
+                    }
+                })
+                .catch(() => {
+                    if (active) {
+                        setResolvedActiveImage(activeImage);
+                    }
+                });
+            return () => {
+                active = false;
+            };
+        }
+
+        setResolvedActiveImage(activeImage);
+    }, [activeImage]);
 
     // Show full loading screen ONLY if we are loading AND we have no images yet
     const showFullLoading = isLoading && imageUrls.length === 0;
@@ -432,7 +471,7 @@ const GeneratedImage: React.FC<GeneratedImageProps> = ({
                     <StageTopRightCluster />
 
                     <img
-                        src={activeImage}
+                        src={resolvedActiveImage}
                         alt={t('stageGeneratedImageAlt')}
                         className={`h-full w-full object-contain transition-transform duration-700 ease-out ${onOpenViewer ? 'cursor-zoom-in' : ''}`}
                         style={{ transform: 'scale(1)' }}

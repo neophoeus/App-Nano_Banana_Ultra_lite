@@ -16,7 +16,7 @@ type UseWorkspaceSurfaceSharedControlsPropsArgs = {
     hasSurfacePrompt: boolean;
     imageModel: ImageModel;
     capability: ModelCapability;
-    availableGroundingModes: GroundingMode[];
+    availableGroundingModes: readonly GroundingMode[];
     aspectRatio: AspectRatio;
     imageSize: ImageSize;
     batchSize: number;

@@ -1,4 +1,4 @@
-﻿import { en } from './translations/en';
+import { en } from './translations/en';
 
 export type Language = 'en' | 'zh_TW' | 'zh_CN' | 'ja' | 'ko' | 'es' | 'fr' | 'de' | 'ru';
 
@@ -32,7 +32,7 @@ const createTranslationRecord = () =>
             record[language.value] = en;
             return record;
         },
-        { en } as Record<Language, TranslationDictionary>,
+        { en } as unknown as Record<Language, TranslationDictionary>,
     );
 
 export const translations: Record<Language, TranslationDictionary> = createTranslationRecord();

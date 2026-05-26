@@ -115,47 +115,47 @@ async function persistResultParts(
 
     return Promise.all(
         resultParts.map(async (part) => {
-            if (part.kind === 'thought-text' || part.kind === 'output-text') {
-                return part;
-            }
+            if (part.kind === 'thought-image' || part.kind === 'output-image') {
+                if (options.primaryOutputImageUrl && part.imageUrl === options.primaryOutputImageUrl) {
+                    return {
+                        ...part,
+                        imageUrl: options.primaryOutputDisplayUrl || part.imageUrl,
+                        savedFilename: options.primaryOutputSavedFilename || part.savedFilename,
+                    };
+                }
 
-            if (options.primaryOutputImageUrl && part.imageUrl === options.primaryOutputImageUrl) {
+                const savedPath = await saveImageToLocal(
+                    part.imageUrl,
+                    `${options.prefix}-thought`,
+                    {
+                        kind: part.kind,
+                        slotIndex: options.slotIndex,
+                        sequence: part.sequence,
+                    },
+                    buildSavedResultPartFilenameStem({
+                        model: options.model,
+                        mode: options.mode,
+                        slotIndex: options.slotIndex,
+                        createdAt: options.requestCreatedAt,
+                        requestId: options.requestId,
+                        sequence: part.sequence,
+                        sourceSavedFilename: options.sourceSavedFilename,
+                    }),
+                );
+                const savedFilename = extractSavedFilename(savedPath);
+
+                if (!savedFilename) {
+                    return part;
+                }
+
                 return {
                     ...part,
-                    imageUrl: options.primaryOutputDisplayUrl || part.imageUrl,
-                    savedFilename: options.primaryOutputSavedFilename || part.savedFilename,
+                    imageUrl: buildSavedImageLoadUrl(savedFilename),
+                    savedFilename,
                 };
             }
 
-            const savedPath = await saveImageToLocal(
-                part.imageUrl,
-                `${options.prefix}-thought`,
-                {
-                    kind: part.kind,
-                    slotIndex: options.slotIndex,
-                    sequence: part.sequence,
-                },
-                buildSavedResultPartFilenameStem({
-                    model: options.model,
-                    mode: options.mode,
-                    slotIndex: options.slotIndex,
-                    createdAt: options.requestCreatedAt,
-                    requestId: options.requestId,
-                    sequence: part.sequence,
-                    sourceSavedFilename: options.sourceSavedFilename,
-                }),
-            );
-            const savedFilename = extractSavedFilename(savedPath);
-
-            if (!savedFilename) {
-                return part;
-            }
-
-            return {
-                ...part,
-                imageUrl: buildSavedImageLoadUrl(savedFilename),
-                savedFilename,
-            };
+            return part;
         }),
     );
 }
@@ -329,7 +329,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
             const currentImageSize = customSize || targetSize;
             const conversationContext =
                 getConversationRequestContext?.({
-                    mode: explicitMode,
+                    mode: explicitMode || '',
                     editingInput,
                     batchSize: currentBatchSize,
                     sourceOverride,

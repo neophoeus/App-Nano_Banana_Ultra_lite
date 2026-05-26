@@ -283,7 +283,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
                     const isFailed = item.status === 'failed';
                     const isSelected = selectedId ? selectedId === item.id : selectedUrl === item.url;
                     const isCurrentSource = currentSourceHistoryId === item.id;
-                    const hasPreviewImage = Boolean(item.url);
+                    const hasPreviewImage = Boolean(item.url) || Boolean(item.thumbnailSavedFilename) || Boolean(item.savedFilename);
                     const isFresh = item.status === 'success' && item.openedAt == null;
 
                     return (
@@ -329,6 +329,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
                             ) : (
                                 <LazyHistoryImage
                                     src={item.url}
+                                    savedFilename={item.thumbnailSavedFilename || item.savedFilename}
                                     alt={t('stageGeneratedImageAlt')}
                                     dataTestId={`history-card-${item.id}-image`}
                                     placeholderTestId={`history-card-${item.id}-deferred-media`}
