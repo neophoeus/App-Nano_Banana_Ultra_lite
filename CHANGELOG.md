@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.8 - 2026-05-29
+
+- **Legacy Model Normalization & Compatibility Protection**: Resolved a critical React runtime error (`supportsGoogleSearch` undefined crash) when loading old workspace snapshots containing deprecated preview image models (e.g., `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`). Added a robust `normalizeSavedImageModel` persistence sanitizer helper to automatically migrate legacy model names to current official ones, and introduced backward-compatible alias keys directly inside the `MODEL_CAPABILITIES` dictionary as a dual-layer safeguard.
+- **Unit Test Coverage Extension**: Added comprehensive unit tests verifying legacy model name normalization, capability mapping alias integrity, and prompt helper features (including `STYLE SENSITIVITY` and `Visual Forensic Protocol` prompts rules).
+
 ## v1.3.7 - 2026-05-29
 
 - **Model Name Migration**: Updated Google Gen AI image generation model names to their official standard names (`gemini-3.1-flash-image` and `gemini-3-pro-image`) in types, UI components, capabilities definition, request configs, test cases, and translations, in alignment with official Google Gen AI specifications.

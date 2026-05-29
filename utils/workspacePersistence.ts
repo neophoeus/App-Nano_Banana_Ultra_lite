@@ -169,6 +169,22 @@ const isImageSize = (value: unknown): value is GeneratedImage['size'] =>
     typeof value === 'string' && IMAGE_SIZE_VALUES.has(value as GeneratedImage['size']);
 const isImageModel = (value: unknown): value is GeneratedImage['model'] =>
     typeof value === 'string' && IMAGE_MODEL_VALUES.has(value as GeneratedImage['model']);
+
+const normalizeSavedImageModel = (value: unknown): ImageModel => {
+    if (typeof value !== 'string') {
+        return EMPTY_WORKSPACE_COMPOSER_STATE.imageModel;
+    }
+    if (value === 'gemini-3.1-flash-image-preview') {
+        return 'gemini-3.1-flash-image';
+    }
+    if (value === 'gemini-3-pro-image-preview') {
+        return 'gemini-3-pro-image';
+    }
+    if (IMAGE_MODEL_VALUES.has(value as ImageModel)) {
+        return value as ImageModel;
+    }
+    return EMPTY_WORKSPACE_COMPOSER_STATE.imageModel;
+};
 const isOutputFormat = (value: unknown): value is WorkspaceComposerState['outputFormat'] =>
     typeof value === 'string' && OUTPUT_FORMAT_VALUES.has(value as WorkspaceComposerState['outputFormat']);
 const isThinkingLevel = (value: unknown): value is WorkspaceComposerState['thinkingLevel'] =>
@@ -744,7 +760,7 @@ const sanitizeHistory = (value: unknown): GeneratedImage[] => {
                 : EMPTY_WORKSPACE_COMPOSER_STATE.aspectRatio,
             size: isImageSize(item.size) ? item.size : EMPTY_WORKSPACE_COMPOSER_STATE.imageSize,
             style: normalizeImageStyle(item.style),
-            model: isImageModel(item.model) ? item.model : EMPTY_WORKSPACE_COMPOSER_STATE.imageModel,
+            model: normalizeSavedImageModel(item.model),
             createdAt: normalizeFiniteNumber(item.createdAt) ?? 0,
             ...(savedFilename !== undefined ? { savedFilename } : {}),
             ...(thumbnailSavedFilename !== undefined ? { thumbnailSavedFilename } : {}),
@@ -994,6 +1010,7 @@ const sanitizeWorkspaceComposerState = (value: unknown): WorkspaceComposerState 
         ...EMPTY_WORKSPACE_COMPOSER_STATE,
         ...value,
         prompt: typeof value.prompt === 'string' ? value.prompt : EMPTY_WORKSPACE_COMPOSER_STATE.prompt,
+        imageModel: normalizeSavedImageModel(value.imageModel),
         imageStyle: normalizeImageStyle(value.imageStyle),
         batchSize:
             typeof value.batchSize === 'number' && Number.isFinite(value.batchSize)
