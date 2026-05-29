@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.7 - 2026-05-29
+
+- **Model Name Migration**: Updated Google Gen AI image generation model names to their official standard names (`gemini-3.1-flash-image` and `gemini-3-pro-image`) in types, UI components, capabilities definition, request configs, test cases, and translations, in alignment with official Google Gen AI specifications.
+
 ## v1.3.6 - 2026-05-26
 
 - **Fullscreen Image Viewer Overflow Fix**: Fixed fullscreen image viewer overflow issue in `WorkspaceViewerOverlay.tsx` by adding `h-full w-full` styling constraints to the image container and the image wrapper element.

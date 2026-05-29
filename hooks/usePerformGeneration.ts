@@ -42,8 +42,8 @@ import { buildStyleTransferPrompt } from '../utils/styleRegistry';
 import { emitDebugTerminalEvent } from '../utils/debugTerminalEvents';
 
 const MODEL_TRANSLATION_KEYS: Record<ImageModel, string> = {
-    'gemini-3.1-flash-image-preview': 'modelGemini31Flash',
-    'gemini-3-pro-image-preview': 'modelGemini3Pro',
+    'gemini-3.1-flash-image': 'modelGemini31Flash',
+    'gemini-3-pro-image': 'modelGemini3Pro',
     'gemini-2.5-flash-image': 'modelGemini25Flash',
 };
 
