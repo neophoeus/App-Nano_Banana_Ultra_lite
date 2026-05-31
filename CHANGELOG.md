@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.9 - 2026-05-31
+
+- **Version Alignment & Cleanup**: Bumped version to `v1.3.9` to align with the main project repository.
+- **E2E Path Integrity**: Cleaned up internal dev environment test paths to keep E2E tests clean and verified TypeScript configuration compatibility in configuration setups.
+
 ## v1.3.8 - 2026-05-29
 
 - **Legacy Model Normalization & Compatibility Protection**: Resolved a critical React runtime error (`supportsGoogleSearch` undefined crash) when loading old workspace snapshots containing deprecated preview image models (e.g., `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`). Added a robust `normalizeSavedImageModel` persistence sanitizer helper to automatically migrate legacy model names to current official ones, and introduced backward-compatible alias keys directly inside the `MODEL_CAPABILITIES` dictionary as a dual-layer safeguard.

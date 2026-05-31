@@ -5,6 +5,7 @@ import {
     DEFAULT_SAFETY_THRESHOLDS,
     GeneratedImage,
     GenerationFailureExtractionIssue,
+    ImageModel,
     ResultImagePart,
     ResultPart,
     SAFETY_CATEGORY_KEYS,
