@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.10 - 2026-06-02
+
+- **Image Attribute Warning Fix**: Resolved React console warnings and redundant duplicate page requests by passing `undefined` to `img` tags' `src` attributes when URLs are empty or initializing.
+- **Snapshot Export Crash Mitigation**: Switched workspace snapshot JSON serialization from formatted (`null, 2`) to compact layout to avoid V8's string allocation OOM crash on documents with large base64 image assets.
+
 ## v1.3.9 - 2026-05-31
 
 - **Version Alignment & Cleanup**: Bumped version to `v1.3.9` to align with the main project repository.

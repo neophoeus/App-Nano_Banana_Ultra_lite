@@ -471,7 +471,7 @@ const GeneratedImage: React.FC<GeneratedImageProps> = ({
                     <StageTopRightCluster />
 
                     <img
-                        src={resolvedActiveImage}
+                        src={resolvedActiveImage || undefined}
                         alt={t('stageGeneratedImageAlt')}
                         className={`h-full w-full object-contain transition-transform duration-700 ease-out ${onOpenViewer ? 'cursor-zoom-in' : ''}`}
                         style={{ transform: 'scale(1)' }}

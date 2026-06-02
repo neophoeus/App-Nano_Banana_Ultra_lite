@@ -1228,7 +1228,7 @@ export const exportWorkspaceSnapshotDocument = async (snapshot: WorkspacePersist
             : {}),
     };
 
-    return JSON.stringify(document, null, 2);
+    return JSON.stringify(document);
 };
 
 export const parseWorkspaceSnapshotDocument = (raw: string): WorkspacePersistenceSnapshot | null => {
