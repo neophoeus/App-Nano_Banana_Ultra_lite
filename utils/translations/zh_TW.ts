@@ -268,6 +268,7 @@ export const zh_TW = {
     logCancelled: '🛑 已取消生成',
     logSaved: '💾 已儲存：{0}',
     logAutoSaveFailed: '⚠️ 自動儲存失敗',
+    workspaceStorageWarningNotice: '[警告] 目前本機圖片快取已達 {0}MB，接近或超過 300MB 限制。為避免效能變慢或瀏覽器崩潰，建議您儘速匯出備份 Workspace，並清理歷史記錄。',
 
     // --- P7: Enter to Send ---
     enterToSend: '輸入鍵送出',

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.0 - 2026-06-03
+
+- **Workspace Storage Capacity Warning**: Added a background storage capacity monitor that polls IndexedDB database size every 30 seconds. Displays a local warning notification when stored image assets exceed 300MB, suggesting users export workspace snapshots and clean up history turns to prevent browser storage quota errors. The warning triggers once per session and resets when storage drops below the threshold. Fully aligned translation entries across all 9 supported languages.
+- **V8 Heap Export Crash Prevention**: Refactored `exportWorkspaceSnapshotDocument` in `utils/workspacePersistence.ts` to build workspace snapshots incrementally using Blob chunk segments, resolving the V8 heap allocation limit overflow ("Invalid string length") when exporting workspaces containing multiple large base64 image resources. Updated unit tests to verify the stream-based Blob generation.
+- **Image Element Empty Src Fix**: Transformed `LazyHistoryImage` to pass `undefined` instead of an empty string `""` to the `<img>` element's `src` property when the image is not yet loaded, preventing React console warnings and redundant HTTP requests.
+
 ## v1.3.11 - 2026-06-03
 
 - **AI Studio Connection Recovery & Heartbeat**: Implemented a periodic background heartbeat check (every 10 seconds) in the application lifecycle (`useWorkspaceAppLifecycle.ts`) to automatically detect and heal disconnected API key states in the Google AI Studio environment.

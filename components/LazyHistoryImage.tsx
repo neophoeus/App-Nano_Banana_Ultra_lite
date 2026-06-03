@@ -107,7 +107,7 @@ function LazyHistoryImage({
         <div ref={containerRef} className={wrapperClassName}>
             {isVisible && displaySrc ? (
                 <img
-                    src={displaySrc}
+                    src={displaySrc || undefined}
                     alt={alt}
                     className={className}
                     data-testid={dataTestId}

@@ -263,8 +263,7 @@ export const useWorkspaceSnapshotActions = ({
     const handleExportWorkspaceSnapshot = useCallback(async () => {
         try {
             const snapshot = composeCurrentWorkspaceSnapshot();
-            const serializedSnapshot = await exportWorkspaceSnapshotDocument(snapshot);
-            const blob = new Blob([serializedSnapshot], { type: 'application/json' });
+            const blob = await exportWorkspaceSnapshotDocument(snapshot);
             const objectUrl = URL.createObjectURL(blob);
             const downloadLink = document.createElement('a');
             downloadLink.href = objectUrl;

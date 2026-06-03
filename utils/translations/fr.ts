@@ -286,6 +286,7 @@ export const fr = {
     logCancelled: '🛑 Génération annulée',
     logSaved: '💾 Enregistré : {0}',
     logAutoSaveFailed: '⚠️ Échec de la sauvegarde auto',
+    workspaceStorageWarningNotice: '[Warning] Browser cache for local images is currently {0}MB, which is close to or exceeds the 300MB limit. To prevent performance slowdowns or browser crashes, please export a backup of your workspace and clear your history.',
 
     // --- P7: Enter to Send ---
     enterToSend: 'Enter = Envoyer',

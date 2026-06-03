@@ -11,6 +11,7 @@ import {
 } from '../utils/translations';
 import { syncThemeFromStoredPreference } from '../utils/theme';
 import { findClosestAspectRatio } from '../utils/canvasWorkspace';
+import { calculateBrowserSavedImageDbSize } from '../utils/browserImageStore';
 
 type UseWorkspaceAppLifecycleArgs = {
     historyCount: number;
@@ -45,6 +46,7 @@ export function useWorkspaceAppLifecycle({
     const beforeUnloadMessageRef = useRef('');
     const leadingReferenceKeyRef = useRef<string | null>(null);
     const currentAspectRatioRef = useRef<AspectRatio>(aspectRatio);
+    const storageWarningShownRef = useRef(false);
 
     useEffect(() => {
         hasDataRef.current =
@@ -220,4 +222,40 @@ export function useWorkspaceAppLifecycle({
             applyAutoRatio(findClosestAspectRatio(img.width, img.height, ASPECT_RATIOS));
         };
     }, [addLog, orderedReferenceAssets, setAspectRatio, showNotification, t]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const THRESHOLD_BYTES = 300 * 1024 * 1024; // 300MB
+
+        const checkStorageAndWarn = async () => {
+            try {
+                const totalBytes = await calculateBrowserSavedImageDbSize();
+                if (cancelled) {
+                    return;
+                }
+
+                if (totalBytes >= THRESHOLD_BYTES) {
+                    if (!storageWarningShownRef.current) {
+                        const sizeMb = Math.round(totalBytes / (1024 * 1024));
+                        const message = t('workspaceStorageWarningNotice').replace('{0}', String(sizeMb));
+                        showNotification(message, 'error');
+                        addLog(message);
+                        storageWarningShownRef.current = true;
+                    }
+                } else {
+                    storageWarningShownRef.current = false;
+                }
+            } catch {
+                // Ignore storage measurement failures
+            }
+        };
+
+        void checkStorageAndWarn();
+        const intervalId = window.setInterval(checkStorageAndWarn, 30000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [addLog, showNotification, t]);
 }

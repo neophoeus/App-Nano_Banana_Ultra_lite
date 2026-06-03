@@ -386,3 +386,33 @@ export const loadBrowserSavedImageDataUrl = async (savedFilename: string): Promi
 export const loadBrowserSavedImageMetadata = async (
     savedFilename: string,
 ): Promise<Record<string, unknown> | undefined> => (await loadBrowserSavedImageRecord(savedFilename))?.metadata;
+
+export const calculateBrowserSavedImageDbSize = async (): Promise<number> => {
+    const database = await openBrowserImageDb();
+    if (!database) {
+        return 0;
+    }
+    return await new Promise<number>((resolve) => {
+        try {
+            const transaction = database.transaction(BROWSER_IMAGE_DB_STORE, 'readonly');
+            const store = transaction.objectStore(BROWSER_IMAGE_DB_STORE);
+            const request = store.openCursor();
+            let totalSize = 0;
+            request.onsuccess = (event) => {
+                const cursor = (event.target as any).result;
+                if (cursor) {
+                    const record = cursor.value;
+                    if (record && typeof record.dataUrl === 'string') {
+                        totalSize += record.dataUrl.length;
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(totalSize);
+                }
+            };
+            request.onerror = () => resolve(0);
+        } catch {
+            resolve(0);
+        }
+    });
+};

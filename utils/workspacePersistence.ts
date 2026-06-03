@@ -1209,26 +1209,35 @@ export const saveWorkspaceSnapshot = (snapshot: WorkspacePersistenceSnapshot): v
     }
 };
 
-export const exportWorkspaceSnapshotDocument = async (snapshot: WorkspacePersistenceSnapshot): Promise<string> => {
+export const exportWorkspaceSnapshotDocument = async (snapshot: WorkspacePersistenceSnapshot): Promise<Blob> => {
     const normalizedSnapshot = sanitizeWorkspaceSnapshot(snapshot);
     const embeddedSavedImages = await collectBrowserSavedImageRecords(
         collectWorkspaceSnapshotSavedFilenames(normalizedSnapshot),
     );
-    const document: WorkspaceSnapshotExportDocument = {
-        format: WORKSPACE_SNAPSHOT_EXPORT_FORMAT,
-        version: WORKSPACE_SNAPSHOT_EXPORT_VERSION,
-        exportedAt: new Date().toISOString(),
-        snapshot: buildPersistableWorkspaceSnapshot(normalizedSnapshot),
-        ...(Object.keys(embeddedSavedImages).length > 0
-            ? {
-                  assets: {
-                      savedImages: embeddedSavedImages,
-                  },
-              }
-            : {}),
-    };
 
-    return JSON.stringify(document);
+    const chunks: (string | Blob)[] = [];
+    chunks.push(`{"format":${JSON.stringify(WORKSPACE_SNAPSHOT_EXPORT_FORMAT)},"version":${WORKSPACE_SNAPSHOT_EXPORT_VERSION},"exportedAt":${JSON.stringify(new Date().toISOString())},"snapshot":`);
+    chunks.push(JSON.stringify(buildPersistableWorkspaceSnapshot(normalizedSnapshot)));
+
+    if (embeddedSavedImages && Object.keys(embeddedSavedImages).length > 0) {
+        chunks.push(`,"assets":{"savedImages":{`);
+        const imageKeys = Object.keys(embeddedSavedImages);
+        for (let i = 0; i < imageKeys.length; i++) {
+            const key = imageKeys[i];
+            const val = embeddedSavedImages[key];
+            if (i > 0) {
+                chunks.push(',');
+            }
+            chunks.push(JSON.stringify(key));
+            chunks.push(':');
+            chunks.push(JSON.stringify(val));
+        }
+        chunks.push('}}}');
+    } else {
+        chunks.push('}');
+    }
+
+    return new Blob(chunks, { type: 'application/json' });
 };
 
 export const parseWorkspaceSnapshotDocument = (raw: string): WorkspacePersistenceSnapshot | null => {

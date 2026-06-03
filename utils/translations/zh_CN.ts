@@ -316,6 +316,7 @@ export const zh_CN = {
     logCancelled: '🛑 已取消生成',
     logSaved: '💾 已保存：{0}',
     logAutoSaveFailed: '⚠️ 自动保存失败',
+    workspaceStorageWarningNotice: '[警告] 目前本地图片缓存已达 {0}MB，接近或超过 300MB 限制。为避免效能变慢或浏览器崩溃，建议您尽速导出备份 Workspace，并清理历史记录。',
 
     // --- P7: Enter to Send ---
     enterToSend: '回车键发送',
