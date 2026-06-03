@@ -158,6 +158,8 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const [apiKeyReady, setApiKeyReady] = useState(false);
     const [isCancelFinalizing, setIsCancelFinalizing] = useState(false);
     const [isDebugTerminalOpen, setIsDebugTerminalOpen] = useState(false);
+    const [showStorageWarningModal, setShowStorageWarningModal] = useState(false);
+    const [storageWarningSizeMb, setStorageWarningSizeMb] = useState(0);
     const isDarkTheme = useDocumentThemeMode();
     const [currentLang, setCurrentLang] = useState<Language>(() => {
         const preferredLanguage = resolvePreferredLanguage();
@@ -1096,6 +1098,10 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         addLog,
         showNotification,
         t,
+        onStorageWarning: (sizeMb) => {
+            setStorageWarningSizeMb(sizeMb);
+            setShowStorageWarningModal(true);
+        },
     });
 
     useWorkspaceCapabilityConstraints({
@@ -2161,6 +2167,9 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         setShowClearWorkspaceConfirm(false);
         handleClearGalleryHistory();
     }, [handleClearGalleryHistory, setShowClearWorkspaceConfirm]);
+    const handleCloseStorageWarningModal = useCallback(() => {
+        setShowStorageWarningModal(false);
+    }, []);
     const historySurface = useMemo(
         () => (
             <WorkspaceUnifiedHistoryPanel
@@ -2491,11 +2500,68 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
             </div>
         </WorkspaceModalFrame>
     ) : null;
+    const workspaceStorageWarningOverlay = showStorageWarningModal ? (
+        <WorkspaceModalFrame
+            dataTestId="workspace-storage-warning-modal"
+            zIndex={WORKSPACE_OVERLAY_Z_INDEX.historyConfirm}
+            maxWidthClass="max-w-sm"
+            onClose={handleCloseStorageWarningModal}
+            closeLabel={t('clearHistoryCancel')}
+            title={t('workspaceStorageWarningTitle') || 'Storage Capacity Alert'}
+            description={t('workspaceStorageWarningNotice').replace('{0}', String(storageWarningSizeMb))}
+            hideCloseButton
+            panelClassName="nbu-modal-shell"
+            headerClassName="justify-center border-b-0 px-6 pt-6 pb-4 text-center"
+            headerExtra={
+                <div className="mt-4 flex justify-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                    </div>
+                </div>
+            }
+        >
+            <div className="flex gap-2 border-t border-gray-100 bg-gray-50 p-2 dark:border-gray-800 dark:bg-gray-900/50">
+                <button
+                    type="button"
+                    data-testid="workspace-storage-warning-close"
+                    onClick={handleCloseStorageWarningModal}
+                    className="flex-1 rounded-xl border border-transparent px-4 py-2.5 text-sm font-bold text-gray-600 transition-all hover:border-gray-200 hover:bg-white dark:text-gray-300 dark:hover:border-gray-700 dark:hover:bg-gray-800"
+                >
+                    {t('clearHistoryCancel')}
+                </button>
+                <button
+                    type="button"
+                    data-testid="workspace-storage-warning-export"
+                    onClick={async () => {
+                        handleCloseStorageWarningModal();
+                        await handleExportWorkspaceSnapshot();
+                    }}
+                    className="flex-1 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:bg-amber-600"
+                >
+                    {t('workspaceExportSnapshot')}
+                </button>
+            </div>
+        </WorkspaceModalFrame>
+    ) : null;
     const workspaceOverlayContent =
-        workspaceDetailOverlays || workspaceClearConfirmOverlay ? (
+        workspaceDetailOverlays || workspaceClearConfirmOverlay || workspaceStorageWarningOverlay ? (
             <>
                 {workspaceDetailOverlays}
                 {workspaceClearConfirmOverlay}
+                {workspaceStorageWarningOverlay}
             </>
         ) : null;
     const focusSurface = useMemo(

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.1 - 2026-06-03
+
+- **Storage Capacity Warning Modal**: Upgraded the 30-second storage capacity warnings to use a persistent modal dialog (`WorkspaceModalFrame`) rather than an easily-missed transient Toast. The modal forces the user to choose between exporting a workspace backup or dismissing the warning.
+- **Unit Test Coverage Extension**: Added robust unit tests in `useWorkspaceAppLifecycle.test.tsx` to verify the capacity alarm threshold check, periodic interval warnings, duplicate alert suppression, and correct callback invocation.
+
 ## v1.4.0 - 2026-06-03
 
 - **Workspace Storage Capacity Warning**: Added a background storage capacity monitor that polls IndexedDB database size every 30 seconds. Displays a local warning notification when stored image assets exceed 300MB, suggesting users export workspace snapshots and clean up history turns to prevent browser storage quota errors. The warning triggers once per session and resets when storage drops below the threshold. Fully aligned translation entries across all 9 supported languages.

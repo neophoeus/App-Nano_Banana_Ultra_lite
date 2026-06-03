@@ -26,6 +26,7 @@ type UseWorkspaceAppLifecycleArgs = {
     addLog: (message: string) => void;
     showNotification: (message: string, type?: 'info' | 'error') => void;
     t: (key: string) => string;
+    onStorageWarning?: (sizeMb: number) => void;
 };
 
 export function useWorkspaceAppLifecycle({
@@ -41,6 +42,7 @@ export function useWorkspaceAppLifecycle({
     addLog,
     showNotification,
     t,
+    onStorageWarning,
 }: UseWorkspaceAppLifecycleArgs) {
     const hasDataRef = useRef(false);
     const beforeUnloadMessageRef = useRef('');
@@ -238,7 +240,9 @@ export function useWorkspaceAppLifecycle({
                     if (!storageWarningShownRef.current) {
                         const sizeMb = Math.round(totalBytes / (1024 * 1024));
                         const message = t('workspaceStorageWarningNotice').replace('{0}', String(sizeMb));
-                        showNotification(message, 'error');
+                        if (onStorageWarning) {
+                            onStorageWarning(sizeMb);
+                        }
                         addLog(message);
                         storageWarningShownRef.current = true;
                     }
@@ -257,5 +261,5 @@ export function useWorkspaceAppLifecycle({
             cancelled = true;
             window.clearInterval(intervalId);
         };
-    }, [addLog, showNotification, t]);
+    }, [addLog, onStorageWarning, t]);
 }

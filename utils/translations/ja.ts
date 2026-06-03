@@ -283,6 +283,7 @@ export const ja = {
     logSaved: '💾 保存済み: {0}',
     logAutoSaveFailed: '⚠️ 自動保存に失敗しました',
     workspaceStorageWarningNotice: '[Warning] Browser cache for local images is currently {0}MB, which is close to or exceeds the 300MB limit. To prevent performance slowdowns or browser crashes, please export a backup of your workspace and clear your history.',
+    workspaceStorageWarningTitle: 'ストレージ警告',
 
     // --- P7: Enter to Send ---
     enterToSend: 'Enter で送信',
