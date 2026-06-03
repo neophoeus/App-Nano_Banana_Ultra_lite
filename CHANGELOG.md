@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.11 - 2026-06-03
+
+- **AI Studio Connection Recovery & Heartbeat**: Implemented a periodic background heartbeat check (every 10 seconds) in the application lifecycle (`useWorkspaceAppLifecycle.ts`) to automatically detect and heal disconnected API key states in the Google AI Studio environment.
+- **Timer Lifecycle Safety**: Secured timer instances inside React hooks, ensuring that any pending async initializations or intervals are properly cleaned up upon unmount to eliminate memory leaks and state updates on unmounted components.
+- **Unit Test Coverage**: Added Vitest test coverage verifying initialization retries, periodic heartbeat recovery, and proper timer cleanup on hook unmount.
+
 ## v1.3.10 - 2026-06-02
 
 - **Image Attribute Warning Fix**: Resolved React console warnings and redundant duplicate page requests by passing `undefined` to `img` tags' `src` attributes when URLs are empty or initializing.

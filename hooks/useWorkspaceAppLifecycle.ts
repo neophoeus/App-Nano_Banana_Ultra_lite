@@ -61,32 +61,65 @@ export function useWorkspaceAppLifecycle({
 
     useEffect(() => {
         let cancelled = false;
+        let initialInterval: any = null;
+        let heartbeatInterval: any = null;
 
         const verifyApiKeyWithRetry = async () => {
             const initialReady = await checkApiKey();
-            if (initialReady) {
-                setApiKeyReady(true);
+            if (cancelled) {
                 return;
             }
 
-            // 在 AI Studio 環境下，window.aistudio 的注入可能有延遲，進行 Polling 重試
+            if (initialReady) {
+                setApiKeyReady(true);
+            }
+
+            // In the AI Studio environment, the injection of window.aistudio may be delayed, so perform polling retry
             let attempts = 0;
-            const maxAttempts = 10;
-            const interval = setInterval(async () => {
+            const maxAttempts = 12;
+
+            if (cancelled) {
+                return;
+            }
+
+            initialInterval = setInterval(async () => {
                 attempts++;
                 if (cancelled) {
-                    clearInterval(interval);
+                    clearInterval(initialInterval);
                     return;
                 }
 
                 const ready = await checkApiKey();
+                if (cancelled) {
+                    clearInterval(initialInterval);
+                    return;
+                }
+
                 if (ready) {
                     setApiKeyReady(true);
-                    clearInterval(interval);
+                    clearInterval(initialInterval);
                 } else if (attempts >= maxAttempts) {
-                    clearInterval(interval);
+                    clearInterval(initialInterval);
                 }
             }, 500);
+
+            if (cancelled) {
+                return;
+            }
+
+            // Start a periodic background Heartbeat check (every 10 seconds) to ensure automatic recovery/updating of the connection status after long usage, tab inactivity, or iframe reconnection
+            heartbeatInterval = setInterval(async () => {
+                if (cancelled) {
+                    clearInterval(heartbeatInterval);
+                    return;
+                }
+                const ready = await checkApiKey();
+                if (cancelled) {
+                    clearInterval(heartbeatInterval);
+                    return;
+                }
+                setApiKeyReady((prev) => (prev !== ready ? ready : prev));
+            }, 10000);
         };
 
         void verifyApiKeyWithRetry();
@@ -141,6 +174,12 @@ export function useWorkspaceAppLifecycle({
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => {
             cancelled = true;
+            if (initialInterval) {
+                clearInterval(initialInterval);
+            }
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+            }
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [setApiKeyReady, setCurrentLang, setInitialPreferencesReady]);
