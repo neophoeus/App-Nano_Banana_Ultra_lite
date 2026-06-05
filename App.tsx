@@ -2551,7 +2551,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
                     }}
                     className="flex-1 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:bg-amber-600"
                 >
-                    {t('workspaceExportSnapshot')}
+                    {t('composerToolbarExportWorkspace')}
                 </button>
             </div>
         </WorkspaceModalFrame>

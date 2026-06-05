@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.2 - 2026-06-05
+
+- **Storage Warning Modal i18n Fix**: Fixed a missing localization key issue where the Export button in the storage warning modal was missing i18n translation mapping. Replaced the unmapped `t('workspaceExportSnapshot')` with the fully translated `t('composerToolbarExportWorkspace')`.
+
 ## v1.4.1 - 2026-06-03
 
 - **Storage Capacity Warning Modal**: Upgraded the 30-second storage capacity warnings to use a persistent modal dialog (`WorkspaceModalFrame`) rather than an easily-missed transient Toast. The modal forces the user to choose between exporting a workspace backup or dismissing the warning.
