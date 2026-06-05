@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.3 - 2026-06-05
+
+- **Gemini API 429 Retry Robustness**: Fixed an issue where Gemini API 429 rate limit exceptions (RESOURCE_EXHAUSTED) containing the word "quota" (e.g. "You exceeded your current quota...") were misclassified as deterministic quota errors and failed to trigger retry loops. Relaxed the deterministic quota detection in `retryOperation` for 429 rate limit errors, implemented regex to parse dynamic retry cooldown time (e.g., "Please retry in X.Xs") from error messages, and extended the maximum retry delay constraint to 60 seconds.
+
 ## v1.4.2 - 2026-06-05
 
 - **Storage Warning Modal i18n Fix**: Fixed a missing localization key issue where the Export button in the storage warning modal was missing i18n translation mapping. Replaced the unmapped `t('workspaceExportSnapshot')` with the fully translated `t('composerToolbarExportWorkspace')`.
