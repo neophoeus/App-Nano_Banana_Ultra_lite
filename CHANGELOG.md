@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.7 - 2026-06-10
+
+- **Cooperative Global Backoff Lock**: Implemented a cooperative global backoff lock in `retryOperation` to throttle and align retry rates. When any slot hits a 429 rate limit, all other slots cooperate by delaying their next execution until the rate limit resets, incorporating a randomized release jitter of `0ms ~ 1000ms` to prevent concurrent thundering herd hits.
+
 ## v1.4.6 - 2026-06-10
 
 - **Dynamic 429 Retry Delay Optimization**: Implemented dynamic retry delay parsing in `retryOperation` for 429 rate limit errors. If the server response specifies a concrete wait time (e.g. "Please retry in X.Xs"), the client waits exactly that duration (plus safety buffer and jitter) instead of forcing a 60-second cooldown, significantly speeding up recovery on fast-reset limits under Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio (rather than paid pay-as-you-go developer APIs).

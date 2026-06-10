@@ -1653,6 +1653,7 @@ interface RetryOptions {
     abortSignal?: AbortSignal;
     onLog?: (msg: string) => void;
 }
+let globalRateLimitBackoffUntil = 0;
 const retryOperation = async <T>(
     operation: () => Promise<T>,
     retries: number,
@@ -1661,6 +1662,15 @@ const retryOperation = async <T>(
 ): Promise<T> => {
     const { backoffMultiplier = 2, maxDelay = 8000, abortSignal, onLog } = opts || {};
     try {
+        const now = Date.now();
+        if (now < globalRateLimitBackoffUntil) {
+            const extraWait = globalRateLimitBackoffUntil - now;
+            // Add a small randomized stagger to avoid thundering herd when release happens
+            const releaseJitter = Math.random() * 1000;
+            const totalWait = extraWait + releaseJitter;
+            onLog?.(`⏳ Rate limit backoff active, stalling request for ${(totalWait / 1000).toFixed(1)}s...`);
+            await delayWithAbort(totalWait, abortSignal);
+        }
         return await operation();
     } catch (error: any) {
         // Never retry these deterministic errors
@@ -1714,6 +1724,7 @@ const retryOperation = async <T>(
                     if (!hasParsedTime) {
                         waitMs = Math.max(waitMs, 60000 + jitter);
                     }
+                    globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + waitMs);
                 }
                 onLog?.(`⏳ Retrying in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
                 emitGenerationDebugEvent({
