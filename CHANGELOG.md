@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.10 - 2026-06-10
+
+- **History Layout Pagination Shift**: Replaced the history panel layout logic with a Shifted Paginated Slice strategy. Active preview tiles occupy slots on the first page, and overflowing completed history items are shifted dynamically to subsequent pages based on the responsive `pageSize` (6 on desktop, 4 on mobile), preventing layout wrapping/height shifts while keeping all history items accessible via pagination during generation.
+
 ## v1.4.9 - 2026-06-10
 
 - **Rate Limit & Global Cooldown Reliability**: Fixed an issue in `retryOperation` where the global rate limit cooldown lock (`globalRateLimitBackoffUntil`) was bypassed after the final retry attempt failed with a 429 error (since updates were previously constrained inside `retries > 0` branches).
