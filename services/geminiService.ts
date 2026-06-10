@@ -1362,7 +1362,12 @@ export const enhancePromptWithGemini = async (
     });
 
     try {
-        const response = await getGeminiClient().models.generateContent(requestPayload);
+        const response = await retryOperation(
+            () => getGeminiClient().models.generateContent(requestPayload),
+            2,
+            1500,
+            { backoffMultiplier: 2, maxDelay: 8000 },
+        );
         const promptText = cleanPromptToolResponseText(response.text, '');
         if (!promptText) {
             throw new Error('Prompt enhancement returned empty text.');
@@ -1423,7 +1428,12 @@ export const generateRandomPrompt = async (
     });
 
     try {
-        const response = await getGeminiClient().models.generateContent(requestPayload);
+        const response = await retryOperation(
+            () => getGeminiClient().models.generateContent(requestPayload),
+            2,
+            1500,
+            { backoffMultiplier: 2, maxDelay: 8000 },
+        );
         const promptText = cleanPromptToolResponseText(response.text, '');
         if (!promptText) {
             throw new Error('Random prompt generation returned empty text.');
@@ -1494,7 +1504,12 @@ export const generatePromptFromImage = async (
     });
 
     try {
-        const response = await getGeminiClient().models.generateContent(requestPayload);
+        const response = await retryOperation(
+            () => getGeminiClient().models.generateContent(requestPayload),
+            2,
+            1500,
+            { backoffMultiplier: 2, maxDelay: 8000 },
+        );
         const promptText = cleanPromptToolResponseText(response.text, '');
         if (!promptText) {
             throw new Error('Image to prompt returned empty text.');
@@ -1689,43 +1704,47 @@ const retryOperation = async <T>(
 
         if (abortSignal?.aborted) throw new Error('ABORTED');
 
+        const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
+        let calculatedWaitMs = delayMs;
+
+        if (isRateLimit) {
+            const retryAfterMatch = msg.match(/retry.?after[:\s]*(\d+)/i);
+            const jitter = Math.random() * 1500; // 0 to 1.5s random jitter to avoid thundering herd
+            let hasParsedTime = false;
+            if (retryAfterMatch) {
+                calculatedWaitMs = Math.max(calculatedWaitMs, parseInt(retryAfterMatch[1]) * 1000 + jitter);
+                hasParsedTime = true;
+            } else {
+                // Attempt to extract dynamic wait time from message (e.g. "Please retry in 27.67s" or "363.33ms")
+                const retryInMatch = msg.match(/retry\s+in\s+([\d.]+)\s*(ms|s)/i);
+                if (retryInMatch) {
+                    const value = parseFloat(retryInMatch[1]);
+                    const isMs = retryInMatch[2].toLowerCase() === 'ms';
+                    const ms = isMs ? value : value * 1000;
+                    calculatedWaitMs = Math.max(calculatedWaitMs, Math.ceil(ms) + 600 + jitter);
+                    hasParsedTime = true;
+                }
+            }
+            // Enforce a minimum 60-second cooldown delay for rate limit errors ONLY when no dynamic time was parsed
+            if (!hasParsedTime) {
+                calculatedWaitMs = Math.max(calculatedWaitMs, 60000 + jitter);
+            }
+            globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + calculatedWaitMs);
+        }
+
         if (retries > 0) {
             // Retry transient errors only
             if (
                 msg.includes('EMPTY_RESPONSE') ||
                 msg.includes('500') ||
                 msg.includes('503') ||
-                msg.includes('429') ||
-                msg.includes('RESOURCE_EXHAUSTED') ||
+                isRateLimit ||
                 msg.includes('fetch')
             ) {
-                // Parse Retry-After header or "retry in X.Xs" for 429/RESOURCE_EXHAUSTED rate limits
-                let waitMs = delayMs;
-                if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-                    const retryAfterMatch = msg.match(/retry.?after[:\s]*(\d+)/i);
-                    const jitter = Math.random() * 1500; // 0 to 1.5s random jitter to avoid thundering herd
-                    let hasParsedTime = false;
-                    if (retryAfterMatch) {
-                        waitMs = Math.max(waitMs, parseInt(retryAfterMatch[1]) * 1000 + jitter);
-                        hasParsedTime = true;
-                    } else {
-                        // Attempt to extract dynamic wait time from message (e.g. "Please retry in 27.67s" or "363.33ms")
-                        const retryInMatch = msg.match(/retry\s+in\s+([\d.]+)\s*(ms|s)/i);
-                        if (retryInMatch) {
-                            const value = parseFloat(retryInMatch[1]);
-                            const isMs = retryInMatch[2].toLowerCase() === 'ms';
-                            const ms = isMs ? value : value * 1000;
-                            // Convert to milliseconds, add a 600ms safety buffer and random jitter
-                            waitMs = Math.max(waitMs, Math.ceil(ms) + 600 + jitter);
-                            hasParsedTime = true;
-                        }
-                    }
-                    // Enforce a minimum 60-second cooldown delay for rate limit errors ONLY when no dynamic time was parsed
-                    if (!hasParsedTime) {
-                        waitMs = Math.max(waitMs, 60000 + jitter);
-                    }
-                    globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + waitMs);
-                }
+                const waitMs = isRateLimit 
+                    ? Math.max(calculatedWaitMs, globalRateLimitBackoffUntil - Date.now())
+                    : calculatedWaitMs;
+
                 onLog?.(`⏳ Retrying in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
                 emitGenerationDebugEvent({
                     kind: 'retry',
@@ -1757,7 +1776,7 @@ const retryOperation = async <T>(
                     }
                 });
                 // Relax max delay to 60s for 429/RESOURCE_EXHAUSTED quota limits
-                const effectiveMaxDelay = (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED'))
+                const effectiveMaxDelay = isRateLimit
                     ? Math.max(maxDelay, 60000)
                     : maxDelay;
                 const nextDelay = Math.min(waitMs * backoffMultiplier, effectiveMaxDelay);

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.9 - 2026-06-10
+
+- **Rate Limit & Global Cooldown Reliability**: Fixed an issue in `retryOperation` where the global rate limit cooldown lock (`globalRateLimitBackoffUntil`) was bypassed after the final retry attempt failed with a 429 error (since updates were previously constrained inside `retries > 0` branches).
+- **Prompt Utilities Protection**: Wrapped prompt engineering utilities (`enhancePromptWithGemini`, `generateRandomPrompt`, `generatePromptFromImage`) in `retryOperation` to support automatic transient retry and honor the global rate limit backoff cooldown.
+
 ## v1.4.8 - 2026-06-10
 
 - **History Layout Pagination Optimization**: Optimized pagination layout inside `WorkspaceUnifiedHistoryPanel` by removing the preview slot reservation logic. Active generating slots (`previewTiles`) are now displayed inline on the first page alongside completed history entries, preventing completed items from being pushed to the next page and eliminating layout shifts during batch generation.
