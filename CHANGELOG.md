@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.11 - 2026-06-10
+
+- **Stage Selection Sync & Failed Slot Layout Fixes**:
+  - Fixed an issue where the generated image was not automatically selected and displayed on the stage upon completion due to URL format mismatches during sync state orchestration.
+  - Fixed a bug during batch generation (quantity > 1) where failed slots temporarily disappeared from the history panel by calculating the page layout offset (`shift`) based on active (uncommitted) preview tiles instead of the initial batch size.
+
 ## v1.4.10 - 2026-06-10
 
 - **History Layout Pagination Shift**: Replaced the history panel layout logic with a Shifted Paginated Slice strategy. Active preview tiles occupy slots on the first page, and overflowing completed history items are shifted dynamically to subsequent pages based on the responsive `pageSize` (6 on desktop, 4 on mobile), preventing layout wrapping/height shifts while keeping all history items accessible via pagination during generation.
