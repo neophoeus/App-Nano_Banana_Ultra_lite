@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.8 - 2026-06-10
+
+- **History Layout Pagination Optimization**: Optimized pagination layout inside `WorkspaceUnifiedHistoryPanel` by removing the preview slot reservation logic. Active generating slots (`previewTiles`) are now displayed inline on the first page alongside completed history entries, preventing completed items from being pushed to the next page and eliminating layout shifts during batch generation.
+
 ## v1.4.7 - 2026-06-10
 
 - **Cooperative Global Backoff Lock**: Implemented a cooperative global backoff lock in `retryOperation` to throttle and align retry rates. When any slot hits a 429 rate limit, all other slots cooperate by delaying their next execution until the rate limit resets, incorporating a randomized release jitter of `0ms ~ 1000ms` to prevent concurrent thundering herd hits.
