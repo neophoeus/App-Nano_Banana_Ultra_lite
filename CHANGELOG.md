@@ -1,12 +1,17 @@
 # Changelog
 
+## v1.4.5 - 2026-06-10
+
+- **Sequential Generation & 429 Retry Optimization**: Implemented a 5-second sequential generation stagger delay between slots to prevent rapid subsequent API requests during sequential generation, matching the rate limit constraints for Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio (rather than paid pay-as-you-go developer APIs). Optimized the 429 `RESOURCE_EXHAUSTED` rate limit retry strategy inside `retryOperation` by enforcing a minimum 60-second cooldown delay (plus random jitter) to give API quotas sufficient time to recover under Google AI Studio plan quota restrictions.
+
 ## v1.4.4 - 2026-06-06
 
-- **Batch Generation & Retry Jitter Optimization**: Optimized batch image generation (`quantity > 1`) by increasing the parallel request stagger delay from `300ms` to `1000ms` to reduce API concurrency pressure. Introduced a random retry jitter (`0ms ~ 1500ms`) and reduced safety buffer (`600ms`) to prevent simultaneous concurrent retries (thundering herd effect) when multiple request slots encounter 429 RESOURCE_EXHAUSTED rate limits.
+- **Batch Generation & Retry Jitter Optimization**: Optimized batch image generation (`quantity > 1`) by increasing the parallel request stagger delay from `300ms` to `1000ms` to reduce API concurrency pressure under Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio, rather than paid pay-as-you-go developer APIs. Introduced a random retry jitter (`0ms ~ 1500ms`) and reduced safety buffer (`600ms`) to prevent simultaneous concurrent retries (thundering herd effect) when multiple request slots encounter 429 RESOURCE_EXHAUSTED rate limits.
 
 ## v1.4.3 - 2026-06-05
 
-- **Gemini API 429 Retry Robustness**: Fixed an issue where Gemini API 429 rate limit exceptions (RESOURCE_EXHAUSTED) containing the word "quota" (e.g. "You exceeded your current quota...") were misclassified as deterministic quota errors and failed to trigger retry loops. Relaxed the deterministic quota detection in `retryOperation` for 429 rate limit errors, implemented regex to parse dynamic retry cooldown time (e.g., "Please retry in X.Xs") from error messages, and extended the maximum retry delay constraint to 60 seconds.
+- **Gemini API 429 Retry Robustness**: Fixed an issue where Gemini API 429 rate limit exceptions (RESOURCE_EXHAUSTED) containing the word "quota" (e.g. "You exceeded your current quota...") were misclassified as deterministic quota errors and failed to trigger retry loops. Relaxed the deterministic quota detection in `retryOperation` for 429 rate limit errors, implemented regex to parse dynamic retry cooldown time (e.g., "Please retry in X.Xs") from error messages, and extended the maximum retry delay constraint to 60 seconds under Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio, rather than paid pay-as-you-go developer APIs.
+
 
 ## v1.4.2 - 2026-06-05
 

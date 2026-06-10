@@ -198,6 +198,7 @@ type BrowserOnlyTestGenerateImageContext = {
     onProgress?: ((completed: number, total: number) => void) | undefined;
     onResult?: ((result: GenerationResult) => void) | undefined;
     onLiveProgressEvent?: ((event: GenerationLiveProgressEvent) => void) | undefined;
+    onSlotStart?: ((slotIndex: number) => void) | undefined;
 };
 
 type BrowserOnlyTestGeminiServiceOverrides = {
@@ -1696,13 +1697,18 @@ const retryOperation = async <T>(
                     if (retryAfterMatch) {
                         waitMs = Math.max(waitMs, parseInt(retryAfterMatch[1]) * 1000 + jitter);
                     } else {
-                        // Attempt to extract dynamic wait time from message (e.g. "Please retry in 27.67s")
-                        const retryInMatch = msg.match(/retry\s+in\s+([\d.]+)\s*s/i);
+                        // Attempt to extract dynamic wait time from message (e.g. "Please retry in 27.67s" or "363.33ms")
+                        const retryInMatch = msg.match(/retry\s+in\s+([\d.]+)\s*(ms|s)/i);
                         if (retryInMatch) {
+                            const value = parseFloat(retryInMatch[1]);
+                            const isMs = retryInMatch[2].toLowerCase() === 'ms';
+                            const ms = isMs ? value : value * 1000;
                             // Convert to milliseconds, add a 600ms safety buffer and random jitter
-                            waitMs = Math.max(waitMs, Math.ceil(parseFloat(retryInMatch[1]) * 1000) + 600 + jitter);
+                            waitMs = Math.max(waitMs, Math.ceil(ms) + 600 + jitter);
                         }
                     }
+                    // Enforce a minimum 60-second cooldown delay for rate limit errors
+                    waitMs = Math.max(waitMs, 60000 + jitter);
                 }
                 onLog?.(`⏳ Retrying in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
                 emitGenerationDebugEvent({
@@ -1760,6 +1766,7 @@ export const generateImageWithGemini = async (
     onProgress?: (completed: number, total: number) => void, // F4: Batch progress
     onResult?: (result: GenerationResult) => void,
     onLiveProgressEvent?: (event: GenerationLiveProgressEvent) => void,
+    onSlotStart?: (slotIndex: number) => void,
 ): Promise<GenerationResult[]> => {
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateImageWithGemini;
     if (testOverride) {
@@ -1788,6 +1795,7 @@ export const generateImageWithGemini = async (
                 onProgress,
                 onResult,
                 onLiveProgressEvent,
+                onSlotStart,
             });
 
             results.forEach((result) => {
@@ -1834,8 +1842,7 @@ export const generateImageWithGemini = async (
         }
     }
 
-    // PARALLEL EXECUTION WITH STAGGER
-    const STAGGER_DELAY_MS = 1000;
+    // SEQUENTIAL EXECUTION (Concurrency = 1)
     let completedCount = 0;
 
     const finalizeBatchResult = (result: GenerationResult): GenerationResult => {
@@ -1845,13 +1852,15 @@ export const generateImageWithGemini = async (
         return result;
     };
 
-    const promises = Array.from({ length: batchSize }).map(async (_, index): Promise<InitialBatchAttemptOutcome> => {
-        // Stagger delay
-        if (index > 0) {
+    const initialOutcomes: InitialBatchAttemptOutcome[] = [];
+
+    for (let index = 0; index < batchSize; index++) {
+        // Force a 5-second delay before starting each slot to avoid rapid sending (skip in unit tests)
+        if (index > 0 && typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
             try {
-                await delayWithAbort(index * STAGGER_DELAY_MS, abortSignal);
+                await delayWithAbort(5000, abortSignal);
             } catch (error) {
-                return {
+                initialOutcomes.push({
                     result: finalizeBatchResult({
                         slotIndex: index,
                         status: 'failed',
@@ -1861,22 +1870,25 @@ export const generateImageWithGemini = async (
                                 : String(error),
                     }),
                     needsRecovery: false,
-                };
+                });
+                continue;
             }
         }
 
         // F1: Check abort before starting each image
         if (abortSignal?.aborted) {
-            return {
+            initialOutcomes.push({
                 result: finalizeBatchResult({
                     slotIndex: index,
                     status: 'failed',
                     error: 'Generation cancelled',
                 }),
                 needsRecovery: false,
-            };
+            });
+            continue;
         }
 
+        onSlotStart?.(index);
         const initialResult = await executeBlockingImageAttemptWithTransientRetry(
             options,
             index,
@@ -1886,35 +1898,37 @@ export const generateImageWithGemini = async (
         );
 
         if (initialResult.status === 'success') {
-            return {
+            initialOutcomes.push({
                 result: finalizeBatchResult(initialResult),
                 needsRecovery: false,
-            };
+            });
+            continue;
         }
 
         if (initialResult.error === 'Generation cancelled') {
-            return {
+            initialOutcomes.push({
                 result: finalizeBatchResult(initialResult),
                 needsRecovery: false,
-            };
+            });
+            continue;
         }
 
         if (shouldAttemptImageAbsenceRecovery(initialResult)) {
             onLog?.(`Image #${index + 1}: No final image returned. Scheduling one recovery attempt.`);
-            return {
+            initialOutcomes.push({
                 result: initialResult,
                 needsRecovery: true,
-            };
+            });
+            continue;
         }
 
         onLog?.(`Image #${index + 1} Failed: ${initialResult.error}`);
-        return {
+        initialOutcomes.push({
             result: finalizeBatchResult(initialResult),
             needsRecovery: false,
-        };
-    });
+        });
+    }
 
-    const initialOutcomes = await Promise.all(promises);
     const results = initialOutcomes.map((outcome) => outcome.result);
 
     for (const outcome of initialOutcomes) {
