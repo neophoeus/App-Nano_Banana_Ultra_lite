@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.6 - 2026-06-10
+
+- **Dynamic 429 Retry Delay Optimization**: Implemented dynamic retry delay parsing in `retryOperation` for 429 rate limit errors. If the server response specifies a concrete wait time (e.g. "Please retry in X.Xs"), the client waits exactly that duration (plus safety buffer and jitter) instead of forcing a 60-second cooldown, significantly speeding up recovery on fast-reset limits under Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio (rather than paid pay-as-you-go developer APIs).
+
 ## v1.4.5 - 2026-06-10
 
 - **Sequential Generation & 429 Retry Optimization**: Implemented a 5-second sequential generation stagger delay between slots to prevent rapid subsequent API requests during sequential generation, matching the rate limit constraints for Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio (rather than paid pay-as-you-go developer APIs). Optimized the 429 `RESOURCE_EXHAUSTED` rate limit retry strategy inside `retryOperation` by enforcing a minimum 60-second cooldown delay (plus random jitter) to give API quotas sufficient time to recover under Google AI Studio plan quota restrictions.
