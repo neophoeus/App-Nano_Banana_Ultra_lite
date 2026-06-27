@@ -1025,6 +1025,15 @@ const generateSingleImageStream = async (
     const streamSessionId = crypto.randomUUID();
 
     try {
+        const now = Date.now();
+        if (now < globalRateLimitBackoffUntil) {
+            const extraWait = globalRateLimitBackoffUntil - now;
+            const releaseJitter = Math.random() * 1000;
+            const totalWait = extraWait + releaseJitter;
+            onLog?.(`⏳ Rate limit backoff active, stalling request for ${(totalWait / 1000).toFixed(1)}s...`);
+            await delayWithAbort(totalWait, abortSignal);
+        }
+
         onLog?.(`Image #${imgIndex}: Opening live progress stream...`);
         prepared = await prepareBrowserGenerateRequest(options, imgIndex, onLog, abortSignal);
         const requestConfig = withAbortSignal(prepared.requestConfig, abortSignal);
@@ -1152,6 +1161,9 @@ const generateSingleImageStream = async (
         }
 
         const streamError = error as Error & { didReceiveStreamEvent?: boolean; partialResponse?: GenerateResponse };
+        
+        // Update the global rate limit cooldown if the stream failed due to rate limits
+        updateGlobalRateLimitBackoff(streamError.message || '');
         const partialResponse = buildCompletedBrowserStreamExtraction(streamState, lastChunk);
         const summary = buildBrowserLiveProgressSummary(streamState, false, transportOpened);
         const partialGroundingDetails = lastChunk ? extractGroundingDetails(lastChunk) : null;
@@ -1669,6 +1681,35 @@ interface RetryOptions {
     onLog?: (msg: string) => void;
 }
 let globalRateLimitBackoffUntil = 0;
+const updateGlobalRateLimitBackoff = (errorMessage: string, delayMs: number = 1500): number => {
+    const isRateLimit = errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED');
+    if (!isRateLimit) return delayMs;
+
+    let calculatedWaitMs = delayMs;
+    const retryAfterMatch = errorMessage.match(/retry.?after[:\s]*(\d+)/i);
+    const jitter = Math.random() * 1500; // 0 to 1.5s random jitter to avoid thundering herd
+    let hasParsedTime = false;
+    if (retryAfterMatch) {
+        calculatedWaitMs = Math.max(calculatedWaitMs, parseInt(retryAfterMatch[1]) * 1000 + jitter);
+        hasParsedTime = true;
+    } else {
+        // Attempt to extract dynamic wait time from message (e.g. "Please retry in 27.67s" or "363.33ms")
+        const retryInMatch = errorMessage.match(/retry\s+in\s+([\d.]+)\s*(ms|s)/i);
+        if (retryInMatch) {
+            const value = parseFloat(retryInMatch[1]);
+            const isMs = retryInMatch[2].toLowerCase() === 'ms';
+            const ms = isMs ? value : value * 1000;
+            calculatedWaitMs = Math.max(calculatedWaitMs, Math.ceil(ms) + 600 + jitter);
+            hasParsedTime = true;
+        }
+    }
+    // Enforce a minimum 60-second cooldown delay for rate limit errors ONLY when no dynamic time was parsed
+    if (!hasParsedTime) {
+        calculatedWaitMs = Math.max(calculatedWaitMs, 60000 + jitter);
+    }
+    globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + calculatedWaitMs);
+    return calculatedWaitMs;
+};
 const retryOperation = async <T>(
     operation: () => Promise<T>,
     retries: number,
@@ -1708,28 +1749,7 @@ const retryOperation = async <T>(
         let calculatedWaitMs = delayMs;
 
         if (isRateLimit) {
-            const retryAfterMatch = msg.match(/retry.?after[:\s]*(\d+)/i);
-            const jitter = Math.random() * 1500; // 0 to 1.5s random jitter to avoid thundering herd
-            let hasParsedTime = false;
-            if (retryAfterMatch) {
-                calculatedWaitMs = Math.max(calculatedWaitMs, parseInt(retryAfterMatch[1]) * 1000 + jitter);
-                hasParsedTime = true;
-            } else {
-                // Attempt to extract dynamic wait time from message (e.g. "Please retry in 27.67s" or "363.33ms")
-                const retryInMatch = msg.match(/retry\s+in\s+([\d.]+)\s*(ms|s)/i);
-                if (retryInMatch) {
-                    const value = parseFloat(retryInMatch[1]);
-                    const isMs = retryInMatch[2].toLowerCase() === 'ms';
-                    const ms = isMs ? value : value * 1000;
-                    calculatedWaitMs = Math.max(calculatedWaitMs, Math.ceil(ms) + 600 + jitter);
-                    hasParsedTime = true;
-                }
-            }
-            // Enforce a minimum 60-second cooldown delay for rate limit errors ONLY when no dynamic time was parsed
-            if (!hasParsedTime) {
-                calculatedWaitMs = Math.max(calculatedWaitMs, 60000 + jitter);
-            }
-            globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + calculatedWaitMs);
+            calculatedWaitMs = updateGlobalRateLimitBackoff(msg, delayMs);
         }
 
         if (retries > 0) {
@@ -1891,7 +1911,8 @@ export const generateImageWithGemini = async (
 
     for (let index = 0; index < batchSize; index++) {
         // Force a 5-second delay before starting each slot to avoid rapid sending (skip in unit tests)
-        if (index > 0 && typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+        const isUnitTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+        if (index > 0 && !isUnitTest) {
             try {
                 await delayWithAbort(5000, abortSignal);
             } catch (error) {

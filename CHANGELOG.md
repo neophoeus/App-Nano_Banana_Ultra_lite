@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.12 - 2026-06-27
+
+- **Rate Limit Cooldown & Stagger Delay Fixes**:
+  - Fixed a bug where `generateSingleImageStream` bypassed the global rate limit cooldown lock (`globalRateLimitBackoffUntil`) before starting stream requests, and failed to update the cooldown lock upon encountering 429 / RESOURCE_EXHAUSTED errors.
+  - Fixed a bug where the 5-second sequential generation stagger delay between batch slots was completely bypassed in the browser environment due to an invalid `process.env.NODE_ENV` check.
+
 ## v1.4.11 - 2026-06-10
 
 - **Stage Selection Sync & Failed Slot Layout Fixes**:
