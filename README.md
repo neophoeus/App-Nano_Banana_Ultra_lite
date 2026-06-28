@@ -40,7 +40,7 @@ Use _lite_ when you want the simpler browser-first frontend experience with a sm
 
 ## Version
 
-Current Lite release: `v1.4.12`
+Current Lite release: `v1.4.13`
 
 Release notes: see [CHANGELOG.md](CHANGELOG.md).
 

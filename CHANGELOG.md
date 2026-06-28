@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.13 - 2026-06-28
+
+- **Rate Limit Backoff & Retry Enhancements**:
+  - Enforced a minimum 5-second backoff cooldown delay for rate limit errors (`429` / `RESOURCE_EXHAUSTED`) inside `updateGlobalRateLimitBackoff` to give the sliding API window time to release slots, even when the API suggests a shorter retry-in value.
+  - Increased the maximum transient retry count from 3 to 6 for Pro image generation models (e.g. `gemini-3-pro-image`) to mitigate severe rate limits during concurrent/sequential batch generations.
+
 ## v1.4.12 - 2026-06-27
 
 - **Rate Limit Cooldown & Stagger Delay Fixes**:

@@ -975,9 +975,12 @@ const executeBlockingImageAttemptWithTransientRetry = async (
     abortSignal?: AbortSignal,
 ): Promise<GenerationResult> => {
     try {
+        const isProModel = options.model?.toLowerCase().includes('pro');
+        const maxRetries = isProModel ? 6 : 3;
+
         const response = await retryOperation(
             () => generateSingleImage(options, slotIndex + 1, onLog, abortSignal),
-            3,
+            maxRetries,
             1500,
             { backoffMultiplier: 2, maxDelay: 8000, abortSignal, onLog },
         );
@@ -1707,6 +1710,9 @@ const updateGlobalRateLimitBackoff = (errorMessage: string, delayMs: number = 15
     if (!hasParsedTime) {
         calculatedWaitMs = Math.max(calculatedWaitMs, 60000 + jitter);
     }
+    // Enforce a minimum 5-second backoff delay for rate limit errors, even if a shorter time was parsed
+    calculatedWaitMs = Math.max(calculatedWaitMs, 5000 + jitter);
+
     globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + calculatedWaitMs);
     return calculatedWaitMs;
 };
