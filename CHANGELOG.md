@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.4.14 - 2026-06-28
+
+- **Rate Limit & Retry Deep Optimizations**:
+  - Implemented automatic rate limit cooldown reset on new manual generation triggers to prevent immediate rate limit warnings when starting fresh generation cycles.
+  - Introduced an early exit mechanism for persistent rate limit errors (`429` / `RESOURCE_EXHAUSTED`) to abort retries and throw a clear error after 3 consecutive failed attempts, avoiding long, useless wait times when RPD quota is exhausted.
+  - Increased the batch stagger delay between sequential slots from 5 seconds to 15 seconds for Pro models to mitigate low RPM limits.
+  - Refactored `globalRateLimitBackoffUntil` into a model-specific cooldown map in `localStorage` to isolate Flash models from Pro limits and persist state across page reloads.
+  - Added a defensive maximum cap of 60 seconds on any rate limit cooldown duration to prevent absolute timestamp interpretation errors or parsing anomalies.
+
 ## v1.4.13 - 2026-06-28
 
 - **Rate Limit Backoff & Retry Enhancements**:

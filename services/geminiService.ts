@@ -982,7 +982,7 @@ const executeBlockingImageAttemptWithTransientRetry = async (
             () => generateSingleImage(options, slotIndex + 1, onLog, abortSignal),
             maxRetries,
             1500,
-            { backoffMultiplier: 2, maxDelay: 8000, abortSignal, onLog },
+            { backoffMultiplier: 2, maxDelay: 8000, abortSignal, onLog, model: options.model, initialRetries: maxRetries },
         );
 
         if (!response.imageUrl) {
@@ -1029,8 +1029,9 @@ const generateSingleImageStream = async (
 
     try {
         const now = Date.now();
-        if (now < globalRateLimitBackoffUntil) {
-            const extraWait = globalRateLimitBackoffUntil - now;
+        const backoffUntil = options.model ? getModelRateLimitBackoffUntil(options.model) : 0;
+        if (now < backoffUntil) {
+            const extraWait = backoffUntil - now;
             const releaseJitter = Math.random() * 1000;
             const totalWait = extraWait + releaseJitter;
             onLog?.(`⏳ Rate limit backoff active, stalling request for ${(totalWait / 1000).toFixed(1)}s...`);
@@ -1682,9 +1683,47 @@ interface RetryOptions {
     maxDelay?: number;
     abortSignal?: AbortSignal;
     onLog?: (msg: string) => void;
+    model?: string;
+    initialRetries?: number;
 }
-let globalRateLimitBackoffUntil = 0;
-const updateGlobalRateLimitBackoff = (errorMessage: string, delayMs: number = 1500): number => {
+const RATE_LIMIT_PREFIX = 'nano_banana_rate_limit_backoff_until_';
+const globalRateLimitBackoffUntilMap: Record<string, number> = {};
+
+const getModelRateLimitBackoffUntil = (model: string): number => {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const val = localStorage.getItem(RATE_LIMIT_PREFIX + model);
+            return val ? parseInt(val, 10) || 0 : 0;
+        }
+    } catch {
+        // ignore
+    }
+    return globalRateLimitBackoffUntilMap[model] || 0;
+};
+
+const setModelRateLimitBackoffUntil = (model: string, until: number) => {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(RATE_LIMIT_PREFIX + model, String(until));
+        }
+    } catch {
+        // ignore
+    }
+    globalRateLimitBackoffUntilMap[model] = until;
+};
+
+export const clearModelRateLimitBackoff = (model: string) => {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem(RATE_LIMIT_PREFIX + model);
+        }
+    } catch {
+        // ignore
+    }
+    delete globalRateLimitBackoffUntilMap[model];
+};
+
+const updateGlobalRateLimitBackoff = (model: string, errorMessage: string, delayMs: number = 1500): number => {
     const isRateLimit = errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED');
     if (!isRateLimit) return delayMs;
 
@@ -1706,27 +1745,34 @@ const updateGlobalRateLimitBackoff = (errorMessage: string, delayMs: number = 15
             hasParsedTime = true;
         }
     }
+    // Enforce a minimum 5-second backoff delay for rate limit errors, even if a shorter time was parsed
+    calculatedWaitMs = Math.max(calculatedWaitMs, 5000 + jitter);
+
     // Enforce a minimum 60-second cooldown delay for rate limit errors ONLY when no dynamic time was parsed
     if (!hasParsedTime) {
         calculatedWaitMs = Math.max(calculatedWaitMs, 60000 + jitter);
     }
-    // Enforce a minimum 5-second backoff delay for rate limit errors, even if a shorter time was parsed
-    calculatedWaitMs = Math.max(calculatedWaitMs, 5000 + jitter);
 
-    globalRateLimitBackoffUntil = Math.max(globalRateLimitBackoffUntil, Date.now() + calculatedWaitMs);
+    // Defensively cap the cooldown delay at 60 seconds to prevent dynamic parsing bugs or absolute timestamp mismatches
+    calculatedWaitMs = Math.min(calculatedWaitMs, 60000 + jitter);
+
+    const currentBackoff = getModelRateLimitBackoffUntil(model);
+    setModelRateLimitBackoffUntil(model, Math.max(currentBackoff, Date.now() + calculatedWaitMs));
     return calculatedWaitMs;
 };
+
 const retryOperation = async <T>(
     operation: () => Promise<T>,
     retries: number,
     delayMs: number = 1500,
     opts?: RetryOptions,
 ): Promise<T> => {
-    const { backoffMultiplier = 2, maxDelay = 8000, abortSignal, onLog } = opts || {};
+    const { backoffMultiplier = 2, maxDelay = 8000, abortSignal, onLog, model = '', initialRetries } = opts || {};
     try {
         const now = Date.now();
-        if (now < globalRateLimitBackoffUntil) {
-            const extraWait = globalRateLimitBackoffUntil - now;
+        const backoffUntil = model ? getModelRateLimitBackoffUntil(model) : 0;
+        if (now < backoffUntil) {
+            const extraWait = backoffUntil - now;
             // Add a small randomized stagger to avoid thundering herd when release happens
             const releaseJitter = Math.random() * 1000;
             const totalWait = extraWait + releaseJitter;
@@ -1755,7 +1801,7 @@ const retryOperation = async <T>(
         let calculatedWaitMs = delayMs;
 
         if (isRateLimit) {
-            calculatedWaitMs = updateGlobalRateLimitBackoff(msg, delayMs);
+            calculatedWaitMs = updateGlobalRateLimitBackoff(model, msg, delayMs);
         }
 
         if (retries > 0) {
@@ -1767,11 +1813,17 @@ const retryOperation = async <T>(
                 isRateLimit ||
                 msg.includes('fetch')
             ) {
+                // Continuous 429 early exit check: if we consecutive-failed 3 times, abort retries
+                if (isRateLimit && initialRetries !== undefined && (initialRetries - retries) >= 3) {
+                    onLog?.(`[API Busy] Gemini API rate limit or quota exceeded after 3 consecutive attempts. Exiting retries to prevent long lockouts.`);
+                    throw error;
+                }
+
                 const waitMs = isRateLimit 
-                    ? Math.max(calculatedWaitMs, globalRateLimitBackoffUntil - Date.now())
+                    ? Math.max(calculatedWaitMs, (model ? getModelRateLimitBackoffUntil(model) : 0) - Date.now())
                     : calculatedWaitMs;
 
-                onLog?.(`⏳ Retrying in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
+                onLog?.(`[API Busy] Gemini API is temporarily busy. Retrying automatically in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
                 emitGenerationDebugEvent({
                     kind: 'retry',
                     label: 'Retry scheduled',
@@ -1829,6 +1881,10 @@ export const generateImageWithGemini = async (
     onLiveProgressEvent?: (event: GenerationLiveProgressEvent) => void,
     onSlotStart?: (slotIndex: number) => void,
 ): Promise<GenerationResult[]> => {
+    if (options.model) {
+        clearModelRateLimitBackoff(options.model);
+    }
+
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateImageWithGemini;
     if (testOverride) {
         const debugRequestId = createDebugRequestId();
@@ -1916,11 +1972,13 @@ export const generateImageWithGemini = async (
     const initialOutcomes: InitialBatchAttemptOutcome[] = [];
 
     for (let index = 0; index < batchSize; index++) {
-        // Force a 5-second delay before starting each slot to avoid rapid sending (skip in unit tests)
+        // Force a delay before starting each slot to avoid rapid sending (skip in unit tests)
         const isUnitTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
         if (index > 0 && !isUnitTest) {
             try {
-                await delayWithAbort(5000, abortSignal);
+                const isProModel = options.model?.toLowerCase().includes('pro');
+                const staggerDelay = isProModel ? 15000 : 5000;
+                await delayWithAbort(staggerDelay, abortSignal);
             } catch (error) {
                 initialOutcomes.push({
                     result: finalizeBatchResult({
