@@ -56,7 +56,9 @@ export const LITE_AI_STUDIO_LIVE_PROGRESS_DISABLED_REASON =
     'Lite AI Studio uses blocking Gemini requests and reads thought artifacts from the final response instead of opening live progress streams.';
 
 const getProbeThinkingLevels = (model: ImageModel): ThinkingLevel[] =>
-    model === 'gemini-3.1-flash-image' ? ['minimal', 'high'] : ['disabled'];
+    model === 'gemini-3.1-flash-image' || model === 'gemini-3.1-flash-lite-image'
+        ? ['minimal', 'high']
+        : ['disabled'];
 
 export const buildLiveProgressCellId = ({
     model,

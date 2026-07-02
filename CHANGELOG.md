@@ -1,31 +1,37 @@
 # Changelog
 
+## v1.5.0 - 2026-07-02
+
+- **Nano Banana 2 Lite Model Integration**:
+    - Integrated support for the new `gemini-3.1-flash-lite-image` model matching the full Ultra capabilities: 1K resolution limit, 14 aspect ratios, up to 14 object references, 0 character references, and thinking levels (minimal/high).
+    - Split `README.md` into English `README.md` and Traditional Chinese `README.zh-TW.md`.
+
 ## v1.4.14 - 2026-06-28
 
 - **Rate Limit & Retry Deep Optimizations**:
-  - Implemented automatic rate limit cooldown reset on new manual generation triggers to prevent immediate rate limit warnings when starting fresh generation cycles.
-  - Introduced an early exit mechanism for persistent rate limit errors (`429` / `RESOURCE_EXHAUSTED`) to abort retries and throw a clear error after 3 consecutive failed attempts, avoiding long, useless wait times when RPD quota is exhausted.
-  - Increased the batch stagger delay between sequential slots from 5 seconds to 15 seconds for Pro models to mitigate low RPM limits.
-  - Refactored `globalRateLimitBackoffUntil` into a model-specific cooldown map in `localStorage` to isolate Flash models from Pro limits and persist state across page reloads.
-  - Added a defensive maximum cap of 60 seconds on any rate limit cooldown duration to prevent absolute timestamp interpretation errors or parsing anomalies.
+    - Implemented automatic rate limit cooldown reset on new manual generation triggers to prevent immediate rate limit warnings when starting fresh generation cycles.
+    - Introduced an early exit mechanism for persistent rate limit errors (`429` / `RESOURCE_EXHAUSTED`) to abort retries and throw a clear error after 3 consecutive failed attempts, avoiding long, useless wait times when RPD quota is exhausted.
+    - Increased the batch stagger delay between sequential slots from 5 seconds to 15 seconds for Pro models to mitigate low RPM limits.
+    - Refactored `globalRateLimitBackoffUntil` into a model-specific cooldown map in `localStorage` to isolate Flash models from Pro limits and persist state across page reloads.
+    - Added a defensive maximum cap of 60 seconds on any rate limit cooldown duration to prevent absolute timestamp interpretation errors or parsing anomalies.
 
 ## v1.4.13 - 2026-06-28
 
 - **Rate Limit Backoff & Retry Enhancements**:
-  - Enforced a minimum 5-second backoff cooldown delay for rate limit errors (`429` / `RESOURCE_EXHAUSTED`) inside `updateGlobalRateLimitBackoff` to give the sliding API window time to release slots, even when the API suggests a shorter retry-in value.
-  - Increased the maximum transient retry count from 3 to 6 for Pro image generation models (e.g. `gemini-3-pro-image`) to mitigate severe rate limits during concurrent/sequential batch generations.
+    - Enforced a minimum 5-second backoff cooldown delay for rate limit errors (`429` / `RESOURCE_EXHAUSTED`) inside `updateGlobalRateLimitBackoff` to give the sliding API window time to release slots, even when the API suggests a shorter retry-in value.
+    - Increased the maximum transient retry count from 3 to 6 for Pro image generation models (e.g. `gemini-3-pro-image`) to mitigate severe rate limits during concurrent/sequential batch generations.
 
 ## v1.4.12 - 2026-06-27
 
 - **Rate Limit Cooldown & Stagger Delay Fixes**:
-  - Fixed a bug where `generateSingleImageStream` bypassed the global rate limit cooldown lock (`globalRateLimitBackoffUntil`) before starting stream requests, and failed to update the cooldown lock upon encountering 429 / RESOURCE_EXHAUSTED errors.
-  - Fixed a bug where the 5-second sequential generation stagger delay between batch slots was completely bypassed in the browser environment due to an invalid `process.env.NODE_ENV` check.
+    - Fixed a bug where `generateSingleImageStream` bypassed the global rate limit cooldown lock (`globalRateLimitBackoffUntil`) before starting stream requests, and failed to update the cooldown lock upon encountering 429 / RESOURCE_EXHAUSTED errors.
+    - Fixed a bug where the 5-second sequential generation stagger delay between batch slots was completely bypassed in the browser environment due to an invalid `process.env.NODE_ENV` check.
 
 ## v1.4.11 - 2026-06-10
 
 - **Stage Selection Sync & Failed Slot Layout Fixes**:
-  - Fixed an issue where the generated image was not automatically selected and displayed on the stage upon completion due to URL format mismatches during sync state orchestration.
-  - Fixed a bug during batch generation (quantity > 1) where failed slots temporarily disappeared from the history panel by calculating the page layout offset (`shift`) based on active (uncommitted) preview tiles instead of the initial batch size.
+    - Fixed an issue where the generated image was not automatically selected and displayed on the stage upon completion due to URL format mismatches during sync state orchestration.
+    - Fixed a bug during batch generation (quantity > 1) where failed slots temporarily disappeared from the history panel by calculating the page layout offset (`shift`) based on active (uncommitted) preview tiles instead of the initial batch size.
 
 ## v1.4.10 - 2026-06-10
 
@@ -59,7 +65,6 @@
 ## v1.4.3 - 2026-06-05
 
 - **Gemini API 429 Retry Robustness**: Fixed an issue where Gemini API 429 rate limit exceptions (RESOURCE_EXHAUSTED) containing the word "quota" (e.g. "You exceeded your current quota...") were misclassified as deterministic quota errors and failed to trigger retry loops. Relaxed the deterministic quota detection in `retryOperation` for 429 rate limit errors, implemented regex to parse dynamic retry cooldown time (e.g., "Please retry in X.Xs") from error messages, and extended the maximum retry delay constraint to 60 seconds under Google AI plans (e.g. Google AI Pro / Google AI Ultra subscription quota) inside Google AI Studio, rather than paid pay-as-you-go developer APIs.
-
 
 ## v1.4.2 - 2026-06-05
 

@@ -822,6 +822,9 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
             if (model === 'gemini-3.1-flash-image') {
                 return t('modelGemini31Flash');
             }
+            if (model === 'gemini-3.1-flash-lite-image') {
+                return t('modelGemini31FlashLite');
+            }
             if (model === 'gemini-3-pro-image') {
                 return t('modelGemini3Pro');
             }
@@ -1904,7 +1907,8 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
                             item.status === 'success' &&
                             (filename
                                 ? item.savedFilename === filename || item.thumbnailSavedFilename === filename
-                                : (item.savedFilename ? buildSavedImageLoadUrl(item.savedFilename) : item.url) === imageUrl),
+                                : (item.savedFilename ? buildSavedImageLoadUrl(item.savedFilename) : item.url) ===
+                                  imageUrl),
                     ) || null;
                 const preferredMetadata =
                     matchedHistoryItem?.id === currentViewedCompletedHistoryItem?.id

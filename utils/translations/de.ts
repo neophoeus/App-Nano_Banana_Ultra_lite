@@ -37,6 +37,7 @@ export const de = {
     modelSelect: 'Modell',
     modelGemini3Pro: 'Nano Banana Pro (gemini-3-pro-image)',
     modelGemini31Flash: 'Nano Banana 2 (gemini-3.1-flash-image)',
+    modelGemini31FlashLite: 'Nano Banana 2 Lite (gemini-3.1-flash-lite-image)',
     modelGemini25Flash: 'Nano Banana (gemini-2.5-flash-image)',
     promptLabel: 'Prompt',
     composerPromptLabelIndependent: 'Anweisung',
@@ -291,7 +292,8 @@ export const de = {
     logCancelled: '🛑 Generierung abgebrochen',
     logSaved: '💾 Gespeichert: {0}',
     logAutoSaveFailed: '⚠️ Automatisches Speichern fehlgeschlagen',
-    workspaceStorageWarningNotice: '[Warning] Browser cache for local images is currently {0}MB, which is close to or exceeds the 300MB limit. To prevent performance slowdowns or browser crashes, please export a backup of your workspace and clear your history.',
+    workspaceStorageWarningNotice:
+        '[Warning] Browser cache for local images is currently {0}MB, which is close to or exceeds the 300MB limit. To prevent performance slowdowns or browser crashes, please export a backup of your workspace and clear your history.',
     workspaceStorageWarningTitle: 'Speicherplatz-Warnung',
 
     // --- P7: Enter to Send ---

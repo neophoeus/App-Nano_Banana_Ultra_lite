@@ -37,6 +37,7 @@ export const ko = {
     modelSelect: '모델',
     modelGemini3Pro: 'Nano Banana Pro (gemini-3-pro-image)',
     modelGemini31Flash: 'Nano Banana 2 (gemini-3.1-flash-image)',
+    modelGemini31FlashLite: 'Nano Banana 2 Lite (gemini-3.1-flash-lite-image)',
     modelGemini25Flash: 'Nano Banana (gemini-2.5-flash-image)',
     promptLabel: '프롬프트',
     composerPromptLabelIndependent: '지시',
@@ -283,7 +284,8 @@ export const ko = {
     logCancelled: '🛑 생성이 취소되었습니다',
     logSaved: '💾 저장됨: {0}',
     logAutoSaveFailed: '⚠️ 자동 저장 실패',
-    workspaceStorageWarningNotice: '[Warning] Browser cache for local images is currently {0}MB, which is close to or exceeds the 300MB limit. To prevent performance slowdowns or browser crashes, please export a backup of your workspace and clear your history.',
+    workspaceStorageWarningNotice:
+        '[Warning] Browser cache for local images is currently {0}MB, which is close to or exceeds the 300MB limit. To prevent performance slowdowns or browser crashes, please export a backup of your workspace and clear your history.',
     workspaceStorageWarningTitle: '저장 공간 경고',
 
     // --- P7: Enter to Send ---

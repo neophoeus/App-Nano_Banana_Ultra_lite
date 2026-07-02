@@ -37,6 +37,7 @@ export const zh_CN = {
     modelSelect: '模型',
     modelGemini3Pro: 'Nano Banana Pro (gemini-3-pro-image)',
     modelGemini31Flash: 'Nano Banana 2 (gemini-3.1-flash-image)',
+    modelGemini31FlashLite: 'Nano Banana 2 Lite (gemini-3.1-flash-lite-image)',
     modelGemini25Flash: 'Nano Banana (gemini-2.5-flash-image)',
     promptLabel: '提示词',
     composerPromptLabelIndependent: '指示',
@@ -317,7 +318,8 @@ export const zh_CN = {
     logCancelled: '🛑 已取消生成',
     logSaved: '💾 已保存：{0}',
     logAutoSaveFailed: '⚠️ 自动保存失败',
-    workspaceStorageWarningNotice: '[警告] 目前本地图片缓存已达 {0}MB，接近或超过 300MB 限制。为避免效能变慢或浏览器崩溃，建议您尽速导出备份 Workspace，并清理历史记录。',
+    workspaceStorageWarningNotice:
+        '[警告] 目前本地图片缓存已达 {0}MB，接近或超过 300MB 限制。为避免效能变慢或浏览器崩溃，建议您尽速导出备份 Workspace，并清理历史记录。',
     workspaceStorageWarningTitle: '存储空间预警',
 
     // --- P7: Enter to Send ---
@@ -697,8 +699,7 @@ export const zh_CN = {
     composerAdvancedTemperatureGuideHigher: '高于 1.0 会增加变化和惊喜感，但一致性与贴合提示词的程度可能下降。',
     composerAdvancedTemperatureGuideLower: '低于 1.0 会让结果更稳定、更贴近字面要求，但探索性通常会降低。',
     composerAdvancedSafetyTitle: '安全过滤',
-    composerAdvancedSafetyNote:
-        '“模型默认”会省略该分类的 Gemini safetySettings。产品当前默认仍是四类全部“不封锁”。',
+    composerAdvancedSafetyNote: '“模型默认”会省略该分类的 Gemini safetySettings。产品当前默认仍是四类全部“不封锁”。',
     composerAdvancedSafetyAllLabel: '同步四项',
     composerAdvancedSafetyMixed: '混合',
     composerAdvancedSafetyThresholdDefault: '模型默认',

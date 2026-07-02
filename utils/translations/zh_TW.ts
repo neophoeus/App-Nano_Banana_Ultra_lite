@@ -37,6 +37,7 @@ export const zh_TW = {
     modelSelect: '模型',
     modelGemini3Pro: 'Nano Banana Pro (gemini-3-pro-image)',
     modelGemini31Flash: 'Nano Banana 2 (gemini-3.1-flash-image)',
+    modelGemini31FlashLite: 'Nano Banana 2 Lite (gemini-3.1-flash-lite-image)',
     modelGemini25Flash: 'Nano Banana (gemini-2.5-flash-image)',
     promptLabel: '提示詞',
     composerPromptLabelIndependent: '指示',
@@ -269,7 +270,8 @@ export const zh_TW = {
     logCancelled: '🛑 已取消生成',
     logSaved: '💾 已儲存：{0}',
     logAutoSaveFailed: '⚠️ 自動儲存失敗',
-    workspaceStorageWarningNotice: '[警告] 目前本機圖片快取已達 {0}MB，接近或超過 300MB 限制。為避免效能變慢或瀏覽器崩潰，建議您儘速匯出備份 Workspace，並清理歷史記錄。',
+    workspaceStorageWarningNotice:
+        '[警告] 目前本機圖片快取已達 {0}MB，接近或超過 300MB 限制。為避免效能變慢或瀏覽器崩潰，建議您儘速匯出備份 Workspace，並清理歷史記錄。',
     workspaceStorageWarningTitle: '儲存空間預警',
 
     // --- P7: Enter to Send ---
