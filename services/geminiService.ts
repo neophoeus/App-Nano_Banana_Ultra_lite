@@ -1011,6 +1011,23 @@ export const checkApiKey = async (): Promise<boolean> => {
 
 export const getConfiguredGeminiApiKey = (): string | null => resolveGeminiApiKey();
 
+function detectThinkingLoop(thoughts: string | undefined | null): boolean {
+    if (!thoughts) return false;
+    const sentences = thoughts
+        .split(/[.\n!?，。！；？,]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length >= 10);
+    const counts = new Map<string, number>();
+    for (const sentence of sentences) {
+        const count = (counts.get(sentence) || 0) + 1;
+        if (count >= 5) {
+            return true;
+        }
+        counts.set(sentence, count);
+    }
+    return false;
+}
+
 const generateSingleImageStream = async (
     options: GenerateOptions,
     imgIndex: number = 1,
@@ -1083,6 +1100,7 @@ const generateSingleImageStream = async (
             ),
         );
 
+        const startTime = Date.now();
         for await (const chunk of stream) {
             throwIfAborted(abortSignal);
             lastChunk = chunk;
@@ -1117,6 +1135,24 @@ const generateSingleImageStream = async (
                     ),
                 );
             });
+
+            const thoughts = streamState.resultParts
+                .filter((p) => p.kind === 'thought-text')
+                .map((p) => p.text || '')
+                .join('');
+
+            const duration = Date.now() - startTime;
+            const hasImage = streamState.resultParts.some((p) => p.kind === 'output-image');
+
+            if (detectThinkingLoop(thoughts)) {
+                throw new Error('Thinking loop detected: repetitive reasoning clauses observed 5 or more times.');
+            }
+            if (thoughts.length > 12000) {
+                throw new Error('Thinking loop detected: reasoning character limit exceeded 12000 characters.');
+            }
+            if (duration > 180000 && !hasImage) {
+                throw new Error('Thinking loop detected: stream ran for over 180 seconds without generating an image.');
+            }
         }
 
         if (!lastChunk && streamState.resultParts.length === 0 && !streamState.thoughtSignatureObserved) {

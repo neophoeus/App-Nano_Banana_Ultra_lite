@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6.0 - 2026-07-06
+
+- **High Thinking Warning & Streaming Loop Circuit Breaker**:
+    - Implemented a settings warning block inside the advanced parameters card when "High Thinking" is enabled with a "Temperature" setting above 1.0, alerting the user about potential infinite reasoning loops.
+    - Implemented an advanced repetitive thought loop circuit breaker that parses the thoughts stream for identical clauses (>= 10 characters repeated 5 or more times) and terminates the generation immediately.
+    - Added security nets to prevent freezing: aborting generation if thought characters exceed 12,000 or if the stream duration exceeds 180 seconds without a completed image.
+    - Integrated a new `'thinking-loop'` error code to failure mapping logs, ensuring all retry recovery mechanisms are skipped.
+
 ## v1.5.0 - 2026-07-02
 
 - **Nano Banana 2 Lite Model Integration**:

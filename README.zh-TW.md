@@ -36,7 +36,7 @@ _lite_ 版預期在 Google AI Studio 中執行。Gemini API 會由 AI Studio 環
 
 ## 版本
 
-目前 Lite 版本：`v1.5.0`
+目前 Lite 版本：`v1.6.0`
 
 版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
 
