@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.0 - 2026-07-06
+
+- **Bright Green Paint Mask & Streamlined Prompt Semantics**:
+    - Replaced the transparent-alpha mask rendering with a solid bright green `(R:0, G:255, B:0)` mask on the submission canvas for both Inpainting (retouch mask pen) and Outpainting (reframe) modes.
+    - Updated `buildEditorPrompt` to provide highly concise, direct green-mask instructions to the model, eliminating verbose white-box avoidance prompts.
+    - Simplified the Doodle mode prompt to focus on spatial guidance, natural blending, and text label instructions, removing redundant blank-region instructions.
+    - Updated Vitest unit tests to verify the condensed green-mask instructions across all editing variations.
+
 ## v1.6.0 - 2026-07-06
 
 - **High Thinking Warning & Streaming Loop Circuit Breaker**:
