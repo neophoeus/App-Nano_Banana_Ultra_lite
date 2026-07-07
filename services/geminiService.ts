@@ -1137,7 +1137,7 @@ const generateSingleImageStream = async (
             });
 
             const thoughts = streamState.resultParts
-                .filter((p) => p.kind === 'thought-text')
+                .filter((p): p is ResultTextPart => p.kind === 'thought-text')
                 .map((p) => p.text || '')
                 .join('');
 
