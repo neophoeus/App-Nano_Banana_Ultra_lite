@@ -112,6 +112,8 @@ export const zh_TW = {
     generationFailureSummaryTextOnly: '模型只回傳了文字，沒有輸出圖片。',
     generationFailureSummaryEmpty: '模型回傳的資訊不足，系統無法可靠判定這次失敗原因。',
     generationFailureSummaryNoImage: '請求已完成，但模型沒有回傳圖片資料。',
+    generationFailureSummaryQuota: '已超出 Gemini API 頻率或額度限制。',
+    generationFailureDetailQuota: '請求因頻率限制或額度暫時耗盡而失敗。建議拉長請求間隔，或等待滾動視窗重置後再試。',
     generationFailureSummaryThinkingLoop: '偵測到思考無限循環',
     generationFailureDetailThinkingLoop: '模型思考字數或時間超出上限，已自動中斷生成以防卡死。建議調整溫度（如降低至 1.0）或降低思考等級後重試。',
     generationFailureDetailRetry: '請調整提示詞後重試，或稍後再試一次。',

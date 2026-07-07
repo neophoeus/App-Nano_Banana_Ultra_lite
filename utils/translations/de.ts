@@ -120,6 +120,8 @@ export const de = {
         'Die Modellantwort enthielt nicht genug Informationen, um eine verlassliche Ursache zu bestimmen.',
     generationFailureSummaryNoImage:
         'Die Anfrage wurde abgeschlossen, aber das Modell hat keine Bilddaten zuruckgegeben.',
+    generationFailureSummaryQuota: 'Gemini API-Ratenbegrenzung oder -Kontingent überschritten.',
+    generationFailureDetailQuota: 'Die Anfrage wurde ratenbegrenzt oder Ihr Kontingent ist vorübergehend erschöpft. Das Vergrößern der Abstände zwischen Anfragen oder Warten auf das Zurücksetzen des Zeitfensters kann helfen.',
     generationFailureDetailRetry: 'Passe den Prompt an oder versuche es spater erneut.',
     generationFailureDetailPromptBlockReason: 'Grund fur die Richtlinienblockierung: {0}.',
     generationFailureDetailSafetyCategories: 'Sicherheitskategorien: {0}.',

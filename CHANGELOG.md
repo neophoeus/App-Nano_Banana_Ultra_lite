@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.7.1 - 2026-07-07
+
+- **Intelligent Retry, Request Spacing & Sequential UI Optimization for Pro Models**:
+    - Enforced cooperative rate limit backoff cooldowns for blocking image generation requests (`generateSingleImage`) just like streaming requests, preventing recovery attempts from bypassing active cooldown windows.
+    - Spaced out recovery attempts inside the generation loop using a 15-second (Pro) / 5-second (non-Pro) stagger delay, preventing them from slamming the API back-to-back with 0ms gap.
+    - Changed the batch generation flow to run recovery attempts in-line immediately per slot instead of waiting for the entire batch to finish, fixing the UI bug where multiple tiles remained stuck as "pending" ("正在繪製...") concurrently.
+    - Extended the consecutive 429 rate limit exit threshold from 3 to 6 for Pro models to allow them to wait out rolling windows and retry until they succeed.
+    - Removed blind backoff clearing at the start of generation sessions; backoff is now cleared only upon successful generation.
+    - Mapped rate limit and quota exceeded errors (HTTP 429/RESOURCE_EXHAUSTED) to a custom `'quota-exceeded'` failure type with helpful localized error messages across all supported languages.
+    - Fixed a bug on stream failures where `updateGlobalRateLimitBackoff` was called without passing the model name argument.
+
 ## v1.7.0 - 2026-07-06
 
 - **Bright Green Paint Mask & Streamlined Prompt Semantics**:

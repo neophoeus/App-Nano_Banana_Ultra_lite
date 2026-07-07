@@ -117,6 +117,8 @@ export const en = {
     generationFailureSummaryEmpty:
         'The model response did not include enough information to identify a trustworthy cause.',
     generationFailureSummaryNoImage: 'The request completed, but the model did not return image data.',
+    generationFailureSummaryQuota: 'Gemini API rate limit or quota exceeded.',
+    generationFailureDetailQuota: 'The request was rate-limited or your quota has been temporarily exhausted. Spacing out requests or waiting for the rolling window to reset may help.',
     generationFailureSummaryThinkingLoop: 'Thinking Loop Detected',
     generationFailureDetailThinkingLoop: 'The model exceeded thinking limits. Generation was aborted to prevent freezing. Try resetting the temperature to 1.0 or reducing the thinking level.',
     generationFailureDetailRetry: 'Try revising the prompt or retrying later.',

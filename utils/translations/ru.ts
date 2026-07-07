@@ -116,6 +116,8 @@ export const ru = {
     generationFailureSummaryTextOnly: 'Модель вернула только текст и не вернула изображение.',
     generationFailureSummaryEmpty: 'Ответ модели не содержал достаточно данных, чтобы надежно определить причину сбоя.',
     generationFailureSummaryNoImage: 'Запрос завершился, но модель не вернула данные изображения.',
+    generationFailureSummaryQuota: 'Превышен лимит запросов или квота Gemini API.',
+    generationFailureDetailQuota: 'Запрос ограничен по частоте или ваша квота временно исчерпана. Попробуйте увеличить интервал между запросами или подождать сброса скользящего окна.',
     generationFailureDetailRetry: 'Попробуйте изменить промпт или повторить попытку позже.',
     generationFailureDetailPromptBlockReason: 'Причина блокировки политикой: {0}.',
     generationFailureDetailSafetyCategories: 'Категории безопасности: {0}.',

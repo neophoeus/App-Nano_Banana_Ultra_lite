@@ -1171,6 +1171,10 @@ const generateSingleImageStream = async (
             abortSignal,
         });
 
+        if (options.model) {
+            clearModelRateLimitBackoff(options.model);
+        }
+
         emitGenerationDebugEvent({
             kind: 'response',
             label: `Image #${imgIndex}: Stream completed`,
@@ -1203,7 +1207,7 @@ const generateSingleImageStream = async (
         const streamError = error as Error & { didReceiveStreamEvent?: boolean; partialResponse?: GenerateResponse };
         
         // Update the global rate limit cooldown if the stream failed due to rate limits
-        updateGlobalRateLimitBackoff(streamError.message || '');
+        updateGlobalRateLimitBackoff(options.model || '', streamError.message || '');
         const partialResponse = buildCompletedBrowserStreamExtraction(streamState, lastChunk);
         const summary = buildBrowserLiveProgressSummary(streamState, false, transportOpened);
         const partialGroundingDetails = lastChunk ? extractGroundingDetails(lastChunk) : null;
@@ -1600,6 +1604,16 @@ const generateSingleImage = async (
     abortSignal?: AbortSignal,
 ): Promise<GenerateResponse> => {
     try {
+        const now = Date.now();
+        const backoffUntil = options.model ? getModelRateLimitBackoffUntil(options.model) : 0;
+        if (now < backoffUntil) {
+            const extraWait = backoffUntil - now;
+            const releaseJitter = Math.random() * 1000;
+            const totalWait = extraWait + releaseJitter;
+            onLog?.(`⏳ Rate limit backoff active, stalling request for ${(totalWait / 1000).toFixed(1)}s...`);
+            await delayWithAbort(totalWait, abortSignal);
+        }
+
         onLog?.(`Image #${imgIndex}: Sending request...`);
         const prepared = await prepareBrowserGenerateRequest(options, imgIndex, onLog, abortSignal);
         const requestConfig = withAbortSignal(prepared.requestConfig, abortSignal);
@@ -1632,6 +1646,10 @@ const generateSingleImage = async (
             onLog,
             abortSignal,
         });
+
+        if (options.model) {
+            clearModelRateLimitBackoff(options.model);
+        }
 
         emitGenerationDebugEvent({
             kind: 'response',
@@ -1850,8 +1868,11 @@ const retryOperation = async <T>(
                 msg.includes('fetch')
             ) {
                 // Continuous 429 early exit check: if we consecutive-failed 3 times, abort retries
-                if (isRateLimit && initialRetries !== undefined && (initialRetries - retries) >= 3) {
-                    onLog?.(`[API Busy] Gemini API rate limit or quota exceeded after 3 consecutive attempts. Exiting retries to prevent long lockouts.`);
+                // Continuous 429 early exit check: if we consecutive-failed 3 times, abort retries
+                const isPro = model?.toLowerCase().includes('pro');
+                const consecutiveFailLimit = isPro ? 6 : 3;
+                if (isRateLimit && initialRetries !== undefined && (initialRetries - retries) >= consecutiveFailLimit) {
+                    onLog?.(`[API Busy] Gemini API rate limit or quota exceeded after ${consecutiveFailLimit} consecutive attempts. Exiting retries to prevent long lockouts.`);
                     throw error;
                 }
 
@@ -1917,10 +1938,6 @@ export const generateImageWithGemini = async (
     onLiveProgressEvent?: (event: GenerationLiveProgressEvent) => void,
     onSlotStart?: (slotIndex: number) => void,
 ): Promise<GenerationResult[]> => {
-    if (options.model) {
-        clearModelRateLimitBackoff(options.model);
-    }
-
     const testOverride = getBrowserOnlyTestGeminiServiceOverrides()?.generateImageWithGemini;
     if (testOverride) {
         const debugRequestId = createDebugRequestId();
@@ -2005,7 +2022,7 @@ export const generateImageWithGemini = async (
         return result;
     };
 
-    const initialOutcomes: InitialBatchAttemptOutcome[] = [];
+    const results: GenerationResult[] = [];
 
     for (let index = 0; index < batchSize; index++) {
         // Force a delay before starting each slot to avoid rapid sending (skip in unit tests)
@@ -2016,8 +2033,8 @@ export const generateImageWithGemini = async (
                 const staggerDelay = isProModel ? 15000 : 5000;
                 await delayWithAbort(staggerDelay, abortSignal);
             } catch (error) {
-                initialOutcomes.push({
-                    result: finalizeBatchResult({
+                results.push(
+                    finalizeBatchResult({
                         slotIndex: index,
                         status: 'failed',
                         error:
@@ -2025,22 +2042,20 @@ export const generateImageWithGemini = async (
                                 ? 'Generation cancelled'
                                 : String(error),
                     }),
-                    needsRecovery: false,
-                });
+                );
                 continue;
             }
         }
 
         // F1: Check abort before starting each image
         if (abortSignal?.aborted) {
-            initialOutcomes.push({
-                result: finalizeBatchResult({
+            results.push(
+                finalizeBatchResult({
                     slotIndex: index,
                     status: 'failed',
                     error: 'Generation cancelled',
                 }),
-                needsRecovery: false,
-            });
+            );
             continue;
         }
 
@@ -2054,63 +2069,70 @@ export const generateImageWithGemini = async (
         );
 
         if (initialResult.status === 'success') {
-            initialOutcomes.push({
-                result: finalizeBatchResult(initialResult),
-                needsRecovery: false,
-            });
+            results.push(finalizeBatchResult(initialResult));
             continue;
         }
 
         if (initialResult.error === 'Generation cancelled') {
-            initialOutcomes.push({
-                result: finalizeBatchResult(initialResult),
-                needsRecovery: false,
-            });
+            results.push(finalizeBatchResult(initialResult));
             continue;
         }
 
         if (shouldAttemptImageAbsenceRecovery(initialResult)) {
             onLog?.(`Image #${index + 1}: No final image returned. Scheduling one recovery attempt.`);
-            initialOutcomes.push({
-                result: initialResult,
-                needsRecovery: true,
-            });
+            
+            // Wait a stagger delay before running the recovery attempt (skip in unit tests)
+            if (!isUnitTest) {
+                try {
+                    const isProModel = options.model?.toLowerCase().includes('pro');
+                    const staggerDelay = isProModel ? 15000 : 5000;
+                    await delayWithAbort(staggerDelay, abortSignal);
+                } catch (error) {
+                    results.push(
+                        finalizeBatchResult({
+                            slotIndex: index,
+                            status: 'failed',
+                            error: 'Generation cancelled',
+                        }),
+                    );
+                    continue;
+                }
+            }
+
+            if (abortSignal?.aborted) {
+                results.push(
+                    finalizeBatchResult({
+                        slotIndex: index,
+                        status: 'failed',
+                        error: 'Generation cancelled',
+                    }),
+                );
+                continue;
+            }
+
+            onLog?.(`Image #${index + 1}: Retrying once after image-absence failure.`);
+            const recoveredResult = await executeBlockingImageAttempt(
+                options,
+                index,
+                onImageReceived,
+                onLog,
+                abortSignal,
+            );
+            const finalizedResult =
+                recoveredResult.status === 'success'
+                    ? recoveredResult
+                    : mergeRecoveredFailureResult(initialResult, recoveredResult);
+
+            if (finalizedResult.status === 'failed') {
+                onLog?.(`Image #${index + 1} Failed: ${finalizedResult.error}`);
+            }
+
+            results.push(finalizeBatchResult(finalizedResult));
             continue;
         }
 
         onLog?.(`Image #${index + 1} Failed: ${initialResult.error}`);
-        initialOutcomes.push({
-            result: finalizeBatchResult(initialResult),
-            needsRecovery: false,
-        });
-    }
-
-    const results = initialOutcomes.map((outcome) => outcome.result);
-
-    for (const outcome of initialOutcomes) {
-        if (!outcome.needsRecovery) {
-            continue;
-        }
-
-        const slotIndex = outcome.result.slotIndex;
-        onLog?.(`Image #${slotIndex + 1}: Retrying once after image-absence failure.`);
-        const recoveredResult = await executeBlockingImageAttempt(
-            options,
-            slotIndex,
-            onImageReceived,
-            onLog,
-            abortSignal,
-        );
-        const finalizedResult =
-            recoveredResult.status === 'success'
-                ? recoveredResult
-                : mergeRecoveredFailureResult(outcome.result, recoveredResult);
-
-        if (finalizedResult.status === 'failed') {
-            onLog?.(`Image #${slotIndex + 1} Failed: ${finalizedResult.error}`);
-        }
-
-        results[slotIndex] = finalizeBatchResult(finalizedResult);
+        results.push(finalizeBatchResult(initialResult));
     }
 
     return results;

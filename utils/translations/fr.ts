@@ -117,6 +117,8 @@ export const fr = {
     generationFailureSummaryEmpty:
         'La reponse du modele ne contenait pas assez dinformations pour identifier une cause fiable.',
     generationFailureSummaryNoImage: 'La requete est terminee, mais le modele na renvoye aucune donnee image.',
+    generationFailureSummaryQuota: 'Limite de taux ou quota Gemini API dépassé.',
+    generationFailureDetailQuota: 'La requête a été limitée par le taux ou votre quota est temporairement épuisé. Espacer les requêtes ou attendre la réinitialisation de la fenêtre glissante peut aider.',
     generationFailureDetailRetry: 'Essayez de modifier le prompt ou de reessayer plus tard.',
     generationFailureDetailPromptBlockReason: 'Raison du blocage par la politique : {0}.',
     generationFailureDetailSafetyCategories: 'Categories de securite : {0}.',

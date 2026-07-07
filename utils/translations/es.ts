@@ -117,6 +117,8 @@ export const es = {
     generationFailureSummaryEmpty:
         'La respuesta del modelo no incluyo suficiente informacion para identificar una causa fiable.',
     generationFailureSummaryNoImage: 'La solicitud termino, pero el modelo no devolvio datos de imagen.',
+    generationFailureSummaryQuota: 'Límite de velocidad o cuota de Gemini API superada.',
+    generationFailureDetailQuota: 'La solicitud fue limitada por velocidad o su cuota se agotó temporalmente. Ampliar el intervalo entre solicitudes o esperar a que se restablezca la ventana móvil puede ayudar.',
     generationFailureDetailRetry: 'Prueba ajustar el prompt o reintentar mas tarde.',
     generationFailureDetailPromptBlockReason: 'Motivo del bloqueo por politica: {0}.',
     generationFailureDetailSafetyCategories: 'Categorias de seguridad: {0}.',

@@ -160,6 +160,8 @@ export const zh_CN = {
     generationFailureSummaryTextOnly: '模型只返回了文字，没有输出图片。',
     generationFailureSummaryEmpty: '模型返回的信息不足，系统无法可靠判断这次失败原因。',
     generationFailureSummaryNoImage: '请求已完成，但模型没有返回图片数据。',
+    generationFailureSummaryQuota: '已超出 Gemini API 频率或额度限制。',
+    generationFailureDetailQuota: '请求因频率限制或额度暂时耗尽而失败。建议拉长请求间隔，或等待滚动窗口重置后再试。',
     generationFailureSummaryThinkingLoop: '检测到思考无限循环',
     generationFailureDetailThinkingLoop: '模型思考字数或时间超出上限，已自动中断生成以防卡死。建议调整温度（如降低至 1.0）或降低思考等级后重试。',
     generationFailureDetailRetry: '请调整提示词后重试，或稍后再试。',

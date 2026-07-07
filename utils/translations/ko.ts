@@ -114,6 +114,8 @@ export const ko = {
     generationFailureSummaryTextOnly: '모델이 텍스트만 반환했고 이미지는 반환하지 않았습니다.',
     generationFailureSummaryEmpty: '모델 응답 정보가 부족해 이번 실패 원인을 신뢰할 수 있게 판단할 수 없습니다.',
     generationFailureSummaryNoImage: '요청은 완료되었지만 모델이 이미지 데이터를 반환하지 않았습니다.',
+    generationFailureSummaryQuota: 'Gemini API 속도 제한 또는 할당량 초과.',
+    generationFailureDetailQuota: '요청 속도가 제한되었거나 할당량이 일시적으로 소진되었습니다. 요청 간격을 늘리거나 롤링 윈도우가 재설정될 때까지 기다려 보십시오.',
     generationFailureDetailRetry: '프롬프트를 수정한 뒤 다시 시도하거나 잠시 후 다시 시도하세요.',
     generationFailureDetailPromptBlockReason: '정책 차단 사유: {0}.',
     generationFailureDetailSafetyCategories: '안전 카테고리: {0}.',

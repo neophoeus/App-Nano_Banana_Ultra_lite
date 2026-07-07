@@ -114,6 +114,8 @@ export const ja = {
     generationFailureSummaryTextOnly: 'モデルはテキストだけを返し、画像は返しませんでした。',
     generationFailureSummaryEmpty: 'モデル応答の情報が不足しており、今回の失敗原因を信頼できる形では特定できません。',
     generationFailureSummaryNoImage: 'リクエストは完了しましたが、モデルは画像データを返しませんでした。',
+    generationFailureSummaryQuota: 'Gemini API のレート制限またはクォータ上限に達しました。',
+    generationFailureDetailQuota: 'リクエストがレート制限されたか、一時的にクォータが枯渇しました。リクエストの間隔を空けるか、ローリングウィンドウのリセットをお待ちください。',
     generationFailureDetailRetry: 'プロンプトを調整して再試行するか、少し待ってから再試行してください。',
     generationFailureDetailPromptBlockReason: 'ポリシーブロック理由: {0}。',
     generationFailureDetailSafetyCategories: '安全カテゴリ: {0}。',

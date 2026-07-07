@@ -53,6 +53,7 @@ const generationFailureCodes = new Set<GenerationFailureCode>([
     'no-image-data',
     'empty-response',
     'thinking-loop',
+    'quota-exceeded',
     'unknown',
 ]);
 
@@ -221,6 +222,14 @@ const missingPartsSnippets = [
     'le modele a renvoye un resultat candidat, mais sans bloc de contenu',
     'das modell hat einen ausgabekandidaten zuruckgegeben, aber ohne inhaltsblocke',
     'модель вернула вариант ответа, но в нем не было блоков содержимого',
+];
+
+const quotaFailureSnippets = [
+    'quota exceeded',
+    'exceeded your current quota',
+    'resource_exhausted',
+    '429',
+    'rate limit',
 ];
 
 const normalizeOptionalString = (value: unknown): string | null => {
@@ -440,6 +449,17 @@ const inferGenerationFailureInfoFromErrorText = (value: string): GenerationFailu
         : includesAnySnippet(comparisonText, missingPartsSnippets)
           ? 'missing-parts'
           : null;
+
+    if (includesAnySnippet(comparisonText, quotaFailureSnippets)) {
+        return {
+            code: 'quota-exceeded',
+            message: normalizedValue,
+            finishReason,
+            extractionIssue,
+            returnedTextContent,
+            returnedThoughtContent,
+        };
+    }
 
     if (promptBlockReason || includesAnySnippet(comparisonText, policyFailureSnippets)) {
         return {
@@ -923,6 +943,14 @@ export function buildStageErrorState(
             return {
                 summary: t('generationFailureSummaryThinkingLoop'),
                 detail: joinDisplayDetails([t('generationFailureDetailThinkingLoop'), retryDetail]),
+                failure: resolvedFailure,
+                rawError: fallbackError || null,
+                displayContext: displayContext ?? null,
+            };
+        case 'quota-exceeded':
+            return {
+                summary: t('generationFailureSummaryQuota'),
+                detail: joinDisplayDetails([t('generationFailureDetailQuota'), retryDetail]),
                 failure: resolvedFailure,
                 rawError: fallbackError || null,
                 displayContext: displayContext ?? null,
