@@ -62,6 +62,14 @@ export type ComposerSettingsPanelProps = {
     promptTextareaRef?: React.RefObject<HTMLTextAreaElement | null>;
     onClearStyle?: () => void;
     imageToolsPanel?: React.ReactNode;
+    roundCount: number;
+    onRoundCountChange: (rounds: number) => void;
+    autoExportTrigger: 'off' | 'count' | 'size' | 'both';
+    onAutoExportTriggerChange: (trigger: 'off' | 'count' | 'size' | 'both') => void;
+    autoExportImageCount: number;
+    onAutoExportImageCountChange: (count: number) => void;
+    autoExportFileSizeMb: number;
+    onAutoExportFileSizeMbChange: (size: number) => void;
 };
 
 type ActivePromptTool = NonNullable<ComposerSettingsPanelProps['activePromptTool']>;
@@ -158,6 +166,14 @@ function ComposerSettingsPanel({
     promptTextareaRef,
     onClearStyle,
     imageToolsPanel,
+    roundCount,
+    onRoundCountChange,
+    autoExportTrigger,
+    onAutoExportTriggerChange,
+    autoExportImageCount,
+    onAutoExportImageCountChange,
+    autoExportFileSizeMb,
+    onAutoExportFileSizeMbChange,
 }: ComposerSettingsPanelProps) {
     const fallbackPromptTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const imageToPromptInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -917,6 +933,73 @@ function ComposerSettingsPanel({
                 className="mt-1.5 min-w-0 nbu-floating-panel rounded-[30px] p-2 text-slate-900 dark:text-white"
             >
                 <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-xs border-b border-gray-100/50 dark:border-slate-800 pb-2 bg-gray-50/50 dark:bg-slate-900/40 rounded-2xl mb-1.5">
+                        {/* Left: Round Count */}
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">{t('roundCount')}</span>
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-lg p-0.5 border dark:border-slate-700 shadow-sm">
+                                <button
+                                    type="button"
+                                    disabled={roundCount <= 1}
+                                    onClick={() => onRoundCountChange(Math.max(1, roundCount - 1))}
+                                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 font-bold select-none text-slate-600 dark:text-slate-300"
+                                >
+                                    -
+                                </button>
+                                <span className="w-5 text-center font-mono font-bold text-[11px] text-slate-700 dark:text-slate-200">{roundCount}</span>
+                                <button
+                                    type="button"
+                                    disabled={roundCount >= 10}
+                                    onClick={() => onRoundCountChange(Math.min(10, roundCount + 1))}
+                                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 font-bold select-none text-slate-600 dark:text-slate-300"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Right: Auto-Export Backup */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={autoExportTrigger !== 'off'}
+                                    onChange={(e) => onAutoExportTriggerChange(e.target.checked ? 'both' : 'off')}
+                                    className="rounded border-gray-300 bg-white dark:border-gray-700 dark:bg-slate-800 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5"
+                                />
+                                <span className="font-semibold text-slate-600 dark:text-slate-300">{t('autoExportSwitch')}</span>
+                            </label>
+
+                            {autoExportTrigger !== 'off' && (
+                                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                                    <span className="text-[11px]">({t('autoExportTriggerCondition')}:</span>
+                                    
+                                    <select
+                                        value={autoExportImageCount}
+                                        onChange={(e) => onAutoExportImageCountChange(Number(e.target.value))}
+                                        className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded px-1.5 py-0.5 text-[11px] font-medium outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-slate-700 dark:text-slate-200"
+                                    >
+                                        <option value={10}>10 {t('imagesCountUnit')}</option>
+                                        <option value={20}>20 {t('imagesCountUnit')}</option>
+                                        <option value={50}>50 {t('imagesCountUnit')}</option>
+                                    </select>
+
+                                    <span>/</span>
+
+                                    <select
+                                        value={autoExportFileSizeMb}
+                                        onChange={(e) => onAutoExportFileSizeMbChange(Number(e.target.value))}
+                                        className="bg-white dark:bg-slate-800 border dark:border-slate-700 rounded px-1.5 py-0.5 text-[11px] font-medium outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-slate-700 dark:text-slate-200"
+                                    >
+                                        <option value={10}>10MB</option>
+                                        <option value={20}>20MB</option>
+                                        <option value={50}>50MB</option>
+                                    </select>
+                                    <span className="text-[11px]">)</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div
                         data-testid="composer-generate-actions"
                         className={`grid gap-1.5 ${showSecondaryGenerateButton ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)]' : 'sm:grid-cols-1'}`}

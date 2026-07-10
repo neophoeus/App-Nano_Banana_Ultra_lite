@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.8.0 - 2026-07-10
+
+- **Multi-Round Consecutive Generation Settings**:
+    - Allowed consecutive multi-round generation runs (configurable from 1 to 10 rounds consecutively) right from the outermost input area.
+- **Hybrid Auto-Export Workspace Backup**:
+    - Implemented hybrid auto-export backup features based on successfully generated image count (10/20/50 images) or workspace file size growth (10MB/20MB/50MB).
+    - Automatically exports workspace snapshots (.json) to the Downloads folder and notifies the user with localized toasts/logs across all supported languages.
+
 ## v1.7.1 - 2026-07-07
 
 - **Intelligent Retry, Request Spacing & Sequential UI Optimization for Pro Models**:

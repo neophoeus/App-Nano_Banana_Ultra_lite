@@ -284,6 +284,14 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         setSafetyThresholds,
         stickySendIntent,
         setStickySendIntent,
+        roundCount,
+        setRoundCount,
+        autoExportTrigger,
+        setAutoExportTrigger,
+        autoExportImageCount,
+        setAutoExportImageCount,
+        autoExportFileSizeMb,
+        setAutoExportFileSizeMb,
         composerState,
         applyComposerState,
         applyViewerComposerSettingsSnapshot,
@@ -1017,6 +1025,8 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         ],
     );
 
+    const handleExportWorkspaceSnapshotRef = useRef<() => Promise<void>>(undefined);
+
     const { performGeneration } = usePerformGeneration({
         t,
         apiKeyReady,
@@ -1057,6 +1067,15 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         onBatchPreviewClear: handleBatchPreviewClear,
         onLiveProgressEvent: handleLiveProgressEvent,
         onLiveProgressReset: handleLiveProgressReset,
+        roundCount,
+        autoExportTrigger,
+        autoExportImageCount,
+        autoExportFileSizeMb,
+        handleExportWorkspaceSnapshot: useCallback(async () => {
+            if (handleExportWorkspaceSnapshotRef.current) {
+                await handleExportWorkspaceSnapshotRef.current();
+            }
+        }, []),
     });
 
     const {
@@ -1236,6 +1255,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         setBranchRenameDialog,
         setBranchRenameDraft,
     });
+    handleExportWorkspaceSnapshotRef.current = handleExportWorkspaceSnapshot;
     const applyEmptyWorkspaceSnapshot = useCallback(() => {
         clearStoredWorkspaceSnapshot();
         void clearBrowserSavedImageRecords();
@@ -1688,6 +1708,14 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         t,
         getStageOriginLabel,
         getLineageActionLabel,
+        roundCount,
+        setRoundCount,
+        autoExportTrigger,
+        setAutoExportTrigger,
+        autoExportImageCount,
+        setAutoExportImageCount,
+        autoExportFileSizeMb,
+        setAutoExportFileSizeMb,
     });
     const advancedSettingsDialogProps: React.ComponentProps<typeof ComposerAdvancedSettingsDialog> | null =
         isAdvancedSettingsOpen

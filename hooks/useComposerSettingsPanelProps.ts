@@ -58,6 +58,14 @@ type UseComposerSettingsPanelPropsArgs = {
     t: (key: string) => string;
     getStageOriginLabel: (origin?: StageAsset['origin']) => string;
     getLineageActionLabel: (action?: TurnLineageAction) => string;
+    roundCount: number;
+    setRoundCount: (rounds: number) => void;
+    autoExportTrigger: 'off' | 'count' | 'size' | 'both';
+    setAutoExportTrigger: (trigger: 'off' | 'count' | 'size' | 'both') => void;
+    autoExportImageCount: number;
+    setAutoExportImageCount: (count: number) => void;
+    autoExportFileSizeMb: number;
+    setAutoExportFileSizeMb: (size: number) => void;
 };
 
 type ComposerSettingsPanelHandlers = {
@@ -74,6 +82,10 @@ type ComposerSettingsPanelHandlers = {
     openSettings: () => void;
     openAdvancedSettings: () => void;
     setActivePickerSheet: Dispatch<SetStateAction<PickerSheet>>;
+    setRoundCount: (rounds: number) => void;
+    setAutoExportTrigger: (trigger: 'off' | 'count' | 'size' | 'both') => void;
+    setAutoExportImageCount: (count: number) => void;
+    setAutoExportFileSizeMb: (size: number) => void;
 };
 
 export function useComposerSettingsPanelProps({
@@ -118,6 +130,14 @@ export function useComposerSettingsPanelProps({
     t,
     getStageOriginLabel,
     getLineageActionLabel,
+    roundCount,
+    setRoundCount,
+    autoExportTrigger,
+    setAutoExportTrigger,
+    autoExportImageCount,
+    setAutoExportImageCount,
+    autoExportFileSizeMb,
+    setAutoExportFileSizeMb,
 }: UseComposerSettingsPanelPropsArgs): ComposerSettingsPanelProps {
     const getModelLabel = useCallback(
         (model: ImageModel) => {
@@ -148,6 +168,10 @@ export function useComposerSettingsPanelProps({
         openSettings,
         openAdvancedSettings,
         setActivePickerSheet,
+        setRoundCount,
+        setAutoExportTrigger,
+        setAutoExportImageCount,
+        setAutoExportFileSizeMb,
     });
 
     useLayoutEffect(() => {
@@ -165,6 +189,10 @@ export function useComposerSettingsPanelProps({
             openSettings,
             openAdvancedSettings,
             setActivePickerSheet,
+            setRoundCount,
+            setAutoExportTrigger,
+            setAutoExportImageCount,
+            setAutoExportFileSizeMb,
         };
     }, [
         setPrompt,
@@ -180,6 +208,10 @@ export function useComposerSettingsPanelProps({
         openSettings,
         openAdvancedSettings,
         setActivePickerSheet,
+        setRoundCount,
+        setAutoExportTrigger,
+        setAutoExportImageCount,
+        setAutoExportFileSizeMb,
     ]);
 
     return useMemo(
@@ -226,6 +258,14 @@ export function useComposerSettingsPanelProps({
             onToggleAdvancedSettings: () => latestHandlersRef.current.openAdvancedSettings(),
             getStageOriginLabel,
             getLineageActionLabel,
+            roundCount,
+            onRoundCountChange: (rounds: number) => latestHandlersRef.current.setRoundCount(rounds),
+            autoExportTrigger,
+            onAutoExportTriggerChange: (trigger: 'off' | 'count' | 'size' | 'both') => latestHandlersRef.current.setAutoExportTrigger(trigger),
+            autoExportImageCount,
+            onAutoExportImageCountChange: (count: number) => latestHandlersRef.current.setAutoExportImageCount(count),
+            autoExportFileSizeMb,
+            onAutoExportFileSizeMbChange: (size: number) => latestHandlersRef.current.setAutoExportFileSizeMb(size),
         }),
         [
             prompt,
@@ -257,6 +297,10 @@ export function useComposerSettingsPanelProps({
             handleImageToPrompt,
             getStageOriginLabel,
             getLineageActionLabel,
+            roundCount,
+            autoExportTrigger,
+            autoExportImageCount,
+            autoExportFileSizeMb,
         ],
     );
 }

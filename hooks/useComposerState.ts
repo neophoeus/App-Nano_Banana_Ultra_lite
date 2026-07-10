@@ -58,6 +58,14 @@ type UseComposerStateReturn = {
     setSafetyThresholds: Dispatch<SetStateAction<SafetyThresholds>>;
     stickySendIntent: StickySendIntent;
     setStickySendIntent: Dispatch<SetStateAction<StickySendIntent>>;
+    roundCount: number;
+    setRoundCount: Dispatch<SetStateAction<number>>;
+    autoExportTrigger: 'off' | 'count' | 'size' | 'both';
+    setAutoExportTrigger: Dispatch<SetStateAction<'off' | 'count' | 'size' | 'both'>>;
+    autoExportImageCount: number;
+    setAutoExportImageCount: Dispatch<SetStateAction<number>>;
+    autoExportFileSizeMb: number;
+    setAutoExportFileSizeMb: Dispatch<SetStateAction<number>>;
     composerState: WorkspaceComposerState;
     applyComposerState: (nextComposerState: WorkspaceComposerState) => void;
     applyViewerComposerSettingsSnapshot: (snapshot: ViewerComposerSettingsSnapshot) => void;
@@ -106,6 +114,18 @@ export function useComposerState({
     const [stickySendIntent, setStickySendIntent] = useState<StickySendIntent>(
         initialComposerState.stickySendIntent ?? 'independent',
     );
+    const [roundCount, setRoundCount] = useState<number>(
+        initialComposerState.roundCount ?? 1,
+    );
+    const [autoExportTrigger, setAutoExportTrigger] = useState<'off' | 'count' | 'size' | 'both'>(
+        initialComposerState.autoExportTrigger ?? 'both',
+    );
+    const [autoExportImageCount, setAutoExportImageCount] = useState<number>(
+        initialComposerState.autoExportImageCount ?? 20,
+    );
+    const [autoExportFileSizeMb, setAutoExportFileSizeMb] = useState<number>(
+        initialComposerState.autoExportFileSizeMb ?? 20,
+    );
 
     const setTemperature: Dispatch<SetStateAction<number>> = useCallback((value) => {
         setTemperatureState((previous) => normalizeTemperature(typeof value === 'function' ? value(previous) : value));
@@ -129,6 +149,10 @@ export function useComposerState({
             stickySendIntent,
             generationMode,
             executionMode,
+            roundCount,
+            autoExportTrigger,
+            autoExportImageCount,
+            autoExportFileSizeMb,
         }),
         [
             aspectRatio,
@@ -147,6 +171,10 @@ export function useComposerState({
             prompt,
             temperature,
             thinkingLevel,
+            roundCount,
+            autoExportTrigger,
+            autoExportImageCount,
+            autoExportFileSizeMb,
         ],
     );
 
@@ -178,6 +206,10 @@ export function useComposerState({
                 ...(nextComposerState.safetyThresholds || {}),
             });
             setStickySendIntent(nextComposerState.stickySendIntent ?? 'independent');
+            setRoundCount(nextComposerState.roundCount ?? 1);
+            setAutoExportTrigger(nextComposerState.autoExportTrigger ?? 'both');
+            setAutoExportImageCount(nextComposerState.autoExportImageCount ?? 20);
+            setAutoExportFileSizeMb(nextComposerState.autoExportFileSizeMb ?? 20);
             syncPresentationState(nextComposerState);
         },
         [syncPresentationState],
@@ -294,6 +326,14 @@ export function useComposerState({
         setSafetyThresholds,
         stickySendIntent,
         setStickySendIntent,
+        roundCount,
+        setRoundCount,
+        autoExportTrigger,
+        setAutoExportTrigger,
+        autoExportImageCount,
+        setAutoExportImageCount,
+        autoExportFileSizeMb,
+        setAutoExportFileSizeMb,
         composerState,
         applyComposerState,
         applyViewerComposerSettingsSnapshot,
