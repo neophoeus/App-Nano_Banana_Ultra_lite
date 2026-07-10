@@ -21,6 +21,8 @@ export type ActiveLiveProgressSession = {
 export type BatchProgressState = {
     completed: number;
     total: number;
+    currentRound?: number;
+    totalRounds?: number;
 };
 
 type UseWorkspaceShellOwnerStateReturn = {

@@ -241,6 +241,7 @@ export const fr = {
         "Réinitialiser cet espace de travail à son état vide par défaut ? L'historique, la scène, le prompt et le contexte de session seront supprimés. Nous recommandons d'utiliser d'abord Exporter l espace de travail. Cette action est irréversible.",
     clearHistoryConfirm: "Effacer l'espace de travail",
     clearHistoryCancel: 'Annuler',
+    cancelWithCountdown: 'Annuler (Tour {0}/{1} • {2} rest.)',
     windowCloseWarningTitle: "L'espace de travail sera perdu",
     windowCloseWarningMsg:
         "Fermer cette app supprimera l'espace de travail actuel. Annulez et revenez d'abord si vous voulez exporter l'espace de travail.",

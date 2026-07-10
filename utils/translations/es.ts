@@ -242,6 +242,7 @@ export const es = {
         '¿Restablecer este espacio de trabajo a su estado vacío predeterminado? Se eliminarán el historial, el escenario, el prompt y el contexto de la sesión. Recomendamos usar primero Exportar espacio de trabajo. No se puede deshacer.',
     clearHistoryConfirm: 'Borrar espacio de trabajo',
     clearHistoryCancel: 'Cancelar',
+    cancelWithCountdown: 'Cancelar (Ronda {0}/{1} • {2} rest.)',
     windowCloseWarningTitle: 'Se perderá el espacio de trabajo',
     windowCloseWarningMsg:
         'Cerrar esta app descartará el espacio de trabajo actual. Cancela y vuelve primero si quieres exportar el espacio de trabajo.',

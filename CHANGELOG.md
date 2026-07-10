@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.8.1 - 2026-07-10
+
+- **Enhanced Round Selection UX**:
+    - Implemented a glassmorphic Popover Grid Picker (1 to 10 rounds grid) for instant round selection.
+    - Added a real-time countdown feedback message directly on the generation Cancel button (e.g., `Cancel (Round 2/3 • 5 left)`) during multi-round runs.
+
 ## v1.8.0 - 2026-07-10
 
 - **Multi-Round Consecutive Generation Settings**:

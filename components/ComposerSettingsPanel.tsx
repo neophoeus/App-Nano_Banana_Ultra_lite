@@ -70,6 +70,12 @@ export type ComposerSettingsPanelProps = {
     onAutoExportImageCountChange: (count: number) => void;
     autoExportFileSizeMb: number;
     onAutoExportFileSizeMbChange: (size: number) => void;
+    batchProgress: {
+        completed: number;
+        total: number;
+        currentRound?: number;
+        totalRounds?: number;
+    };
 };
 
 type ActivePromptTool = NonNullable<ComposerSettingsPanelProps['activePromptTool']>;
@@ -174,6 +180,7 @@ function ComposerSettingsPanel({
     onAutoExportImageCountChange,
     autoExportFileSizeMb,
     onAutoExportFileSizeMbChange,
+    batchProgress,
 }: ComposerSettingsPanelProps) {
     const fallbackPromptTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const imageToPromptInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -188,7 +195,24 @@ function ComposerSettingsPanel({
     const [sendIntentInfoVariant, setSendIntentInfoVariant] = React.useState<StickySendIntent | 'memory-unavailable'>(
         stickySendIntent,
     );
+    const [isRoundGridOpen, setIsRoundGridOpen] = React.useState(false);
     const t = (key: string) => getTranslation(currentLanguage, key);
+    const cancelLabel = React.useMemo(() => {
+        const totalRounds = batchProgress?.totalRounds || 1;
+        const currentRound = batchProgress?.currentRound || 1;
+        if (totalRounds > 1) {
+            const batchSize = batchProgress?.total || 0;
+            const completedInCurrentRound = batchProgress?.completed || 0;
+            const totalImages = totalRounds * batchSize;
+            const completedImages = (currentRound - 1) * batchSize + completedInCurrentRound;
+            const remainingImages = Math.max(0, totalImages - completedImages);
+            return t('cancelWithCountdown')
+                .replace('{0}', String(currentRound))
+                .replace('{1}', String(totalRounds))
+                .replace('{2}', String(remainingImages));
+        }
+        return t('clearHistoryCancel');
+    }, [batchProgress, t]);
     const resolveIntentText = (key: string, fallback: string) => {
         const value = t(key);
         return value === key ? fallback : value;
@@ -946,7 +970,53 @@ function ComposerSettingsPanel({
                                 >
                                     -
                                 </button>
-                                <span className="w-5 text-center font-mono font-bold text-[11px] text-slate-700 dark:text-slate-200">{roundCount}</span>
+                                <div className="relative flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRoundGridOpen(!isRoundGridOpen)}
+                                        className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-center font-mono font-bold text-[11px] text-slate-700 dark:text-slate-200 focus:outline-none"
+                                        title="Click to select rounds"
+                                    >
+                                        {roundCount}
+                                    </button>
+                                    
+                                    {isRoundGridOpen && (
+                                        <>
+                                            {/* Click outside backdrop */}
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setIsRoundGridOpen(false)}
+                                            />
+                                            {/* Glassmorphic Popover Grid */}
+                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-gray-200/80 dark:border-slate-800 rounded-xl p-2 shadow-xl w-[130px] select-none pointer-events-auto">
+                                                <div className="grid grid-cols-5 gap-1">
+                                                    {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => {
+                                                        const isSelected = num === roundCount;
+                                                        return (
+                                                            <button
+                                                                key={num}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    onRoundCountChange(num);
+                                                                    setIsRoundGridOpen(false);
+                                                                }}
+                                                                className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold font-mono transition-all ${
+                                                                    isSelected
+                                                                        ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-sm shadow-amber-500/20'
+                                                                        : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                                                }`}
+                                                            >
+                                                                {num}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                                {/* Popover Arrow */}
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white dark:border-t-slate-900" />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                                 <button
                                     type="button"
                                     disabled={roundCount >= 10}
@@ -1010,7 +1080,7 @@ function ComposerSettingsPanel({
                                 variant="danger"
                                 className="min-h-[64px] rounded-[28px] text-[15px]"
                             >
-                                {t('clearHistoryCancel')}
+                                {cancelLabel}
                             </Button>
                         ) : isCancelFinalizing ? (
                             <Button

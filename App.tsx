@@ -1716,6 +1716,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         setAutoExportImageCount,
         autoExportFileSizeMb,
         setAutoExportFileSizeMb,
+        batchProgress,
     });
     const advancedSettingsDialogProps: React.ComponentProps<typeof ComposerAdvancedSettingsDialog> | null =
         isAdvancedSettingsOpen

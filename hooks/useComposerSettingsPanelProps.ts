@@ -66,6 +66,12 @@ type UseComposerSettingsPanelPropsArgs = {
     setAutoExportImageCount: (count: number) => void;
     autoExportFileSizeMb: number;
     setAutoExportFileSizeMb: (size: number) => void;
+    batchProgress: {
+        completed: number;
+        total: number;
+        currentRound?: number;
+        totalRounds?: number;
+    };
 };
 
 type ComposerSettingsPanelHandlers = {
@@ -138,6 +144,7 @@ export function useComposerSettingsPanelProps({
     setAutoExportImageCount,
     autoExportFileSizeMb,
     setAutoExportFileSizeMb,
+    batchProgress,
 }: UseComposerSettingsPanelPropsArgs): ComposerSettingsPanelProps {
     const getModelLabel = useCallback(
         (model: ImageModel) => {
@@ -266,6 +273,7 @@ export function useComposerSettingsPanelProps({
             onAutoExportImageCountChange: (count: number) => latestHandlersRef.current.setAutoExportImageCount(count),
             autoExportFileSizeMb,
             onAutoExportFileSizeMbChange: (size: number) => latestHandlersRef.current.setAutoExportFileSizeMb(size),
+            batchProgress,
         }),
         [
             prompt,
@@ -301,6 +309,7 @@ export function useComposerSettingsPanelProps({
             autoExportTrigger,
             autoExportImageCount,
             autoExportFileSizeMb,
+            batchProgress,
         ],
     );
 }

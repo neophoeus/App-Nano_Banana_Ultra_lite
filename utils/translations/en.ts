@@ -231,6 +231,7 @@ export const en = {
         'Clear this workspace back to its default empty state? History, stage, prompt, and session context will be removed. We recommend using Export Workspace first. This cannot be undone.',
     clearHistoryConfirm: 'Reset Workspace',
     clearHistoryCancel: 'Cancel',
+    cancelWithCountdown: 'Cancel (Round {0}/{1} • {2} left)',
     windowCloseWarningTitle: 'Workspace will be lost',
     windowCloseWarningMsg:
         'Closing this app will discard the current workspace. Cancel and return first if you want to export the workspace.',

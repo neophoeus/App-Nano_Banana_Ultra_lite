@@ -190,7 +190,7 @@ interface UsePerformGenerationProps {
     googleSearch: boolean;
     imageSearch: boolean;
     safetyThresholds: SafetyThresholds;
-    setBatchProgress: (val: { completed: number; total: number }) => void;
+    setBatchProgress: (val: { completed: number; total: number; currentRound?: number; totalRounds?: number }) => void;
     setGenerationMode: (val: string) => void;
     setExecutionMode: (val: ExecutionMode) => void;
     setDisplaySettings: (val: any) => void;
@@ -339,6 +339,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
             }
 
             const currentBatchSize = customBatchSize !== undefined ? customBatchSize : batchSize;
+            const totalRounds = roundCount || 1;
             const currentImageSize = customSize || targetSize;
             const conversationContext =
                 getConversationRequestContext?.({
@@ -352,7 +353,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                 : deriveExecutionMode(currentBatchSize);
             const variantGroupId = currentExecutionMode === 'interactive-batch-variants' ? crypto.randomUUID() : null;
 
-            setBatchProgress({ completed: 0, total: currentBatchSize });
+            setBatchProgress({ completed: 0, total: currentBatchSize, currentRound: 1, totalRounds });
             onBatchPreviewStart?.({ sessionId: batchSessionId, batchSize: currentBatchSize });
 
             let currentMode = explicitMode;
@@ -384,7 +385,6 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
             });
 
             try {
-                const totalRounds = roundCount || 1;
 
                 for (let currentRound = 1; currentRound <= totalRounds; currentRound++) {
                     if (controller.signal.aborted) {
@@ -399,7 +399,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                     }
 
                     if (currentRound > 1) {
-                        setBatchProgress({ completed: 0, total: currentBatchSize });
+                        setBatchProgress({ completed: 0, total: currentBatchSize, currentRound, totalRounds });
                         onBatchPreviewStart?.({ sessionId: roundBatchSessionId, batchSize: currentBatchSize });
                     }
 
@@ -690,7 +690,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                         handleImageReceived,
                         handleLogCallback,
                         controller.signal,
-                        (completed, total) => setBatchProgress({ completed, total }),
+                        (completed, total) => setBatchProgress({ completed, total, currentRound, totalRounds }),
                         handleResultCallback,
                         onLiveProgressEvent,
                         handleSlotStart,
@@ -806,7 +806,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                 setIsCancelFinalizing?.(false);
                 setIsGenerating(false);
                 abortControllerRef.current = null;
-                setBatchProgress({ completed: 0, total: 0 });
+                setBatchProgress({ completed: 0, total: 0, currentRound: undefined, totalRounds: undefined });
             }
         },
         [
