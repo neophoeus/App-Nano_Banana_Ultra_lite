@@ -297,6 +297,8 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         applyViewerComposerSettingsSnapshot,
         setGroundingMode,
         restoreEditorComposerState,
+        settingsLocked,
+        setSettingsLocked,
     } = useComposerState({
         initialComposerState,
         generationMode,
@@ -1666,6 +1668,9 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
     const handleClearStyle = useCallback(() => {
         setImageStyle('None');
     }, [setImageStyle]);
+    const handleToggleSettingsLock = useCallback(() => {
+        setSettingsLocked((prev) => !prev);
+    }, [setSettingsLocked]);
     const composerSettingsPanelProps = useComposerSettingsPanelProps({
         prompt,
         placeholder: t('placeholder'),
@@ -1717,6 +1722,9 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
         autoExportFileSizeMb,
         setAutoExportFileSizeMb,
         batchProgress,
+        settingsLocked,
+        onToggleSettingsLock: handleToggleSettingsLock,
+        showNotification,
     });
     const advancedSettingsDialogProps: React.ComponentProps<typeof ComposerAdvancedSettingsDialog> | null =
         isAdvancedSettingsOpen

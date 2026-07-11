@@ -72,6 +72,9 @@ type UseComposerSettingsPanelPropsArgs = {
         currentRound?: number;
         totalRounds?: number;
     };
+    settingsLocked?: boolean;
+    onToggleSettingsLock?: () => void;
+    showNotification?: (message: string, type?: 'info' | 'error') => void;
 };
 
 type ComposerSettingsPanelHandlers = {
@@ -145,6 +148,9 @@ export function useComposerSettingsPanelProps({
     autoExportFileSizeMb,
     setAutoExportFileSizeMb,
     batchProgress,
+    settingsLocked,
+    onToggleSettingsLock,
+    showNotification,
 }: UseComposerSettingsPanelPropsArgs): ComposerSettingsPanelProps {
     const getModelLabel = useCallback(
         (model: ImageModel) => {
@@ -274,6 +280,9 @@ export function useComposerSettingsPanelProps({
             autoExportFileSizeMb,
             onAutoExportFileSizeMbChange: (size: number) => latestHandlersRef.current.setAutoExportFileSizeMb(size),
             batchProgress,
+            settingsLocked,
+            onToggleSettingsLock,
+            showNotification,
         }),
         [
             prompt,
@@ -310,6 +319,9 @@ export function useComposerSettingsPanelProps({
             autoExportImageCount,
             autoExportFileSizeMb,
             batchProgress,
+            settingsLocked,
+            onToggleSettingsLock,
+            showNotification,
         ],
     );
 }

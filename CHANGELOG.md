@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.9.0 - 2026-07-11
+
+- **Settings Locking Switch**:
+    - Introduced a settings lock switch in the settings row next to the style selection strip.
+- **State Protection**:
+    - Guarded settings states (generation model, aspect ratio, image size, batch size, style, temperature, output format, thinking level, and web search) from reference image upload aspect-ratio changes, workspace resets, and snapshot restoration side effects.
+- **User Feedback Warning**:
+    - Interactive warnings are shown via toast alerts when attempting to open settings/styles/advanced panels while they are locked.
+- **Multilingual Support**:
+    - Integrated settings lock localized keys for English, Traditional Chinese, Simplified Chinese, Japanese, Korean, German, Spanish, French, and Russian.
+- **Unit Test Coverage**:
+    - Implemented lock state and update prevention test cases in Vitest.
+
 ## v1.8.2 - 2026-07-11
 
 - **Refined Layout & Repositioning**:
