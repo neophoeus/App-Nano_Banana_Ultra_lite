@@ -121,10 +121,10 @@ export function useComposerState({
         initialComposerState.autoExportTrigger ?? 'both',
     );
     const [autoExportImageCount, setAutoExportImageCount] = useState<number>(
-        initialComposerState.autoExportImageCount ?? 20,
+        initialComposerState.autoExportImageCount ?? 50,
     );
     const [autoExportFileSizeMb, setAutoExportFileSizeMb] = useState<number>(
-        initialComposerState.autoExportFileSizeMb ?? 20,
+        initialComposerState.autoExportFileSizeMb ?? 50,
     );
 
     const setTemperature: Dispatch<SetStateAction<number>> = useCallback((value) => {
@@ -208,8 +208,8 @@ export function useComposerState({
             setStickySendIntent(nextComposerState.stickySendIntent ?? 'independent');
             setRoundCount(nextComposerState.roundCount ?? 1);
             setAutoExportTrigger(nextComposerState.autoExportTrigger ?? 'both');
-            setAutoExportImageCount(nextComposerState.autoExportImageCount ?? 20);
-            setAutoExportFileSizeMb(nextComposerState.autoExportFileSizeMb ?? 20);
+            setAutoExportImageCount(nextComposerState.autoExportImageCount ?? 50);
+            setAutoExportFileSizeMb(nextComposerState.autoExportFileSizeMb ?? 50);
             syncPresentationState(nextComposerState);
         },
         [syncPresentationState],

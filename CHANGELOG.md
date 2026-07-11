@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.8.2 - 2026-07-11
+
+- **Refined Layout & Repositioning**:
+    - Repositioned the consecutive generation and auto-export settings strip to render below the primary generate/cancel buttons.
+- **Modern Pill Switch Control**:
+    - Replaced standard checkboxes with a custom, iOS-style sliding Toggle Pill switch for auto-backup controls.
+- **Threshold & Default Enhancements**:
+    - Increased default backup thresholds to 50 images and 50MB.
+    - Expanded threshold option selectors to include 100 images and 100MB choices.
+- **Extended Readability**:
+    - Extended the auto-backup toast notification duration to 8 seconds (8000ms) to ensure users have enough time to read the backup status.
+
 ## v1.8.1 - 2026-07-10
 
 - **Enhanced Round Selection UX**:

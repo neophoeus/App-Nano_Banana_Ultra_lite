@@ -194,7 +194,7 @@ interface UsePerformGenerationProps {
     setGenerationMode: (val: string) => void;
     setExecutionMode: (val: ExecutionMode) => void;
     setDisplaySettings: (val: any) => void;
-    showNotification: (msg: string, type?: 'info' | 'error') => void;
+    showNotification: (msg: string, type?: 'info' | 'error', durationMs?: number) => void;
     setHistory: (val: React.SetStateAction<GeneratedImageType[]>) => void;
     setIsEditing: (val: boolean) => void;
     setEditingImageSource: (val: string | null) => void;
@@ -744,8 +744,8 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                     const sizeGrowthBytes = Number(localStorage.getItem('nbu_sizeGrowthSinceExport') || '0');
                     const sizeGrowthMb = sizeGrowthBytes / (1024 * 1024);
 
-                    const countThreshold = autoExportImageCount || 20;
-                    const sizeThresholdMb = autoExportFileSizeMb || 20;
+                    const countThreshold = autoExportImageCount || 50;
+                    const sizeThresholdMb = autoExportFileSizeMb || 50;
 
                     let shouldExport = false;
                     if (autoExportTrigger === 'count' && countSinceExport >= countThreshold) {
@@ -763,7 +763,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                         const notificationMsg = t('autoExportNotificationText')
                             .replace('{0}', String(countSinceExport))
                             .replace('{1}', sizeGrowthMb.toFixed(1));
-                        showNotification(notificationMsg, 'info');
+                        showNotification(notificationMsg, 'info', 8000);
 
                         if (handleExportWorkspaceSnapshot) {
                             setTimeout(() => {

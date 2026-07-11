@@ -957,7 +957,57 @@ function ComposerSettingsPanel({
                 className="mt-1.5 min-w-0 nbu-floating-panel rounded-[30px] p-2 text-slate-900 dark:text-white"
             >
                 <div className="space-y-1.5">
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-xs border-b border-gray-100/50 dark:border-slate-800 pb-2 bg-gray-50/50 dark:bg-slate-900/40 rounded-2xl mb-1.5">
+                    <div
+                        data-testid="composer-generate-actions"
+                        className={`grid gap-1.5 ${showSecondaryGenerateButton ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)]' : 'sm:grid-cols-1'}`}
+                    >
+                        {isGenerating ? (
+                            <Button
+                                onClick={onCancelGeneration}
+                                variant="danger"
+                                className="min-h-[64px] rounded-[28px] text-[15px]"
+                            >
+                                {cancelLabel}
+                            </Button>
+                        ) : isCancelFinalizing ? (
+                            <Button
+                                data-testid="composer-cancel-finalizing-button"
+                                variant="secondary"
+                                disabled
+                                className="min-h-[64px] rounded-[28px] px-4 text-[14px]"
+                            >
+                                {t('composerCancelFinalizingLabel')}
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={handlePrimaryGenerate}
+                                aria-label={primaryGenerateAriaLabel}
+                                title={primaryGenerateTitle}
+                                className="btn-shimmer min-h-[64px] rounded-[28px] text-[15px]"
+                            >
+                                {primaryGenerateLabel}
+                            </Button>
+                        )}
+                        {showSecondaryGenerateButton ? (
+                            <Button
+                                variant="secondary"
+                                onClick={onGenerate}
+                                className="min-h-[64px] min-w-0 rounded-[28px] px-3.5 text-[14px]"
+                            >
+                                {generateLabel}
+                            </Button>
+                        ) : null}
+                    </div>
+                    {isCancelFinalizing ? (
+                        <p
+                            data-testid="composer-cancel-finalizing-note"
+                            className="px-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400"
+                        >
+                            {t('composerCancelFinalizingNote')}
+                        </p>
+                    ) : null}
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-xs border-t border-gray-100/50 dark:border-slate-800 pt-2 bg-gray-50/50 dark:bg-slate-900/40 rounded-2xl mt-1.5">
                         {/* Left: Round Count */}
                         <div className="flex items-center gap-2">
                             <span className="font-semibold text-slate-600 dark:text-slate-300">{t('roundCount')}</span>
@@ -1030,15 +1080,23 @@ function ComposerSettingsPanel({
 
                         {/* Right: Auto-Export Backup */}
                         <div className="flex flex-wrap items-center gap-3">
-                            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={autoExportTrigger !== 'off'}
-                                    onChange={(e) => onAutoExportTriggerChange(e.target.checked ? 'both' : 'off')}
-                                    className="rounded border-gray-300 bg-white dark:border-gray-700 dark:bg-slate-800 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5"
-                                />
+                            <div className="flex items-center gap-2">
                                 <span className="font-semibold text-slate-600 dark:text-slate-300">{t('autoExportSwitch')}</span>
-                            </label>
+                                <button
+                                    type="button"
+                                    onClick={() => onAutoExportTriggerChange(autoExportTrigger === 'off' ? 'both' : 'off')}
+                                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-amber-500 focus:ring-offset-1 dark:focus:ring-offset-slate-900 ${
+                                        autoExportTrigger !== 'off' ? 'bg-amber-500' : 'bg-gray-200 dark:bg-slate-700'
+                                    }`}
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                            autoExportTrigger !== 'off' ? 'translate-x-4' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
 
                             {autoExportTrigger !== 'off' && (
                                 <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
@@ -1052,6 +1110,7 @@ function ComposerSettingsPanel({
                                         <option value={10}>10 {t('imagesCountUnit')}</option>
                                         <option value={20}>20 {t('imagesCountUnit')}</option>
                                         <option value={50}>50 {t('imagesCountUnit')}</option>
+                                        <option value={100}>100 {t('imagesCountUnit')}</option>
                                     </select>
 
                                     <span>/</span>
@@ -1064,61 +1123,13 @@ function ComposerSettingsPanel({
                                         <option value={10}>10MB</option>
                                         <option value={20}>20MB</option>
                                         <option value={50}>50MB</option>
+                                        <option value={100}>100MB</option>
                                     </select>
                                     <span className="text-[11px]">)</span>
                                 </div>
                             )}
                         </div>
                     </div>
-                    <div
-                        data-testid="composer-generate-actions"
-                        className={`grid gap-1.5 ${showSecondaryGenerateButton ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)]' : 'sm:grid-cols-1'}`}
-                    >
-                        {isGenerating ? (
-                            <Button
-                                onClick={onCancelGeneration}
-                                variant="danger"
-                                className="min-h-[64px] rounded-[28px] text-[15px]"
-                            >
-                                {cancelLabel}
-                            </Button>
-                        ) : isCancelFinalizing ? (
-                            <Button
-                                data-testid="composer-cancel-finalizing-button"
-                                variant="secondary"
-                                disabled
-                                className="min-h-[64px] rounded-[28px] px-4 text-[14px]"
-                            >
-                                {t('composerCancelFinalizingLabel')}
-                            </Button>
-                        ) : (
-                            <Button
-                                onClick={handlePrimaryGenerate}
-                                aria-label={primaryGenerateAriaLabel}
-                                title={primaryGenerateTitle}
-                                className="btn-shimmer min-h-[64px] rounded-[28px] text-[15px]"
-                            >
-                                {primaryGenerateLabel}
-                            </Button>
-                        )}
-                        {showSecondaryGenerateButton ? (
-                            <Button
-                                variant="secondary"
-                                onClick={onGenerate}
-                                className="min-h-[64px] min-w-0 rounded-[28px] px-3.5 text-[14px]"
-                            >
-                                {generateLabel}
-                            </Button>
-                        ) : null}
-                    </div>
-                    {isCancelFinalizing ? (
-                        <p
-                            data-testid="composer-cancel-finalizing-note"
-                            className="px-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400"
-                        >
-                            {t('composerCancelFinalizingNote')}
-                        </p>
-                    ) : null}
                 </div>
             </div>
         </section>

@@ -27,7 +27,7 @@ export function useWorkspaceShellUtilities({ setApiKeyReady }: UseWorkspaceShell
         [],
     );
 
-    const showNotification = useCallback((message: string, type: 'info' | 'error' = 'info') => {
+    const showNotification = useCallback((message: string, type: 'info' | 'error' = 'info', durationMs?: number) => {
         if (notificationTimeoutRef.current !== null) {
             window.clearTimeout(notificationTimeoutRef.current);
         }
@@ -36,7 +36,7 @@ export function useWorkspaceShellUtilities({ setApiKeyReady }: UseWorkspaceShell
         notificationTimeoutRef.current = window.setTimeout(() => {
             setNotification(null);
             notificationTimeoutRef.current = null;
-        }, NOTIFICATION_TIMEOUT_MS);
+        }, durationMs ?? NOTIFICATION_TIMEOUT_MS);
     }, []);
 
     const handleApiKeyConnect = useCallback(async (): Promise<boolean> => {

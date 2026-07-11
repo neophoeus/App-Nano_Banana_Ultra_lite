@@ -94,8 +94,8 @@ export const EMPTY_WORKSPACE_COMPOSER_STATE: WorkspaceComposerState = {
     executionMode: 'single-turn',
     roundCount: 1,
     autoExportTrigger: 'both',
-    autoExportImageCount: 20,
-    autoExportFileSizeMb: 20,
+    autoExportImageCount: 50,
+    autoExportFileSizeMb: 50,
 };
 
 export const EMPTY_WORKSPACE_SNAPSHOT: WorkspacePersistenceSnapshot = {
