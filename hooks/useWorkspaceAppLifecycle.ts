@@ -27,6 +27,7 @@ type UseWorkspaceAppLifecycleArgs = {
     showNotification: (message: string, type?: 'info' | 'error') => void;
     t: (key: string) => string;
     onStorageWarning?: (sizeMb: number) => void;
+    settingsLocked?: boolean;
 };
 
 export function useWorkspaceAppLifecycle({
@@ -43,6 +44,7 @@ export function useWorkspaceAppLifecycle({
     showNotification,
     t,
     onStorageWarning,
+    settingsLocked,
 }: UseWorkspaceAppLifecycleArgs) {
     const hasDataRef = useRef(false);
     const beforeUnloadMessageRef = useRef('');
@@ -203,6 +205,9 @@ export function useWorkspaceAppLifecycle({
         leadingReferenceKeyRef.current = leadingKey;
 
         const applyAutoRatio = (nextRatio: AspectRatio) => {
+            if (settingsLocked) {
+                return;
+            }
             if (nextRatio === currentAspectRatioRef.current) {
                 return;
             }
@@ -223,7 +228,7 @@ export function useWorkspaceAppLifecycle({
         img.onload = () => {
             applyAutoRatio(findClosestAspectRatio(img.width, img.height, ASPECT_RATIOS));
         };
-    }, [addLog, orderedReferenceAssets, setAspectRatio, showNotification, t]);
+    }, [addLog, orderedReferenceAssets, setAspectRatio, showNotification, t, settingsLocked]);
 
     useEffect(() => {
         let cancelled = false;

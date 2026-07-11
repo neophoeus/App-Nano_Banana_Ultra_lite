@@ -1126,6 +1126,7 @@ const App: React.FC<AppProps> = ({ initialWorkspaceSnapshotOverride, persistWork
             setStorageWarningSizeMb(sizeMb);
             setShowStorageWarningModal(true);
         },
+        settingsLocked,
     });
 
     useWorkspaceCapabilityConstraints({

@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.9.1 - 2026-07-11
+
+- **Auto-Ratio Locking Fix**:
+    - Blocked reference image uploads from triggering auto-ratio toast notification alerts and logs when settings are locked.
+- **ShowNotification Prop Integration**:
+    - Resolved missing callback mapping in `useComposerSettingsPanelProps` hook parameters to clear TypeScript warning.
+- **Unit Test Verification**:
+    - Added corresponding Vitest tests validating that aspect ratio auto-sets and notifications are skipped when locked.
+
 ## v1.9.0 - 2026-07-11
 
 - **Settings Locking Switch**:
