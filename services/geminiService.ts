@@ -982,7 +982,14 @@ const executeBlockingImageAttemptWithTransientRetry = async (
             () => generateSingleImage(options, slotIndex + 1, onLog, abortSignal),
             maxRetries,
             1500,
-            { backoffMultiplier: 2, maxDelay: 8000, abortSignal, onLog, model: options.model, initialRetries: maxRetries },
+            {
+                backoffMultiplier: 2,
+                maxDelay: 8000,
+                abortSignal,
+                onLog,
+                model: options.model,
+                initialRetries: maxRetries,
+            },
         );
 
         if (!response.imageUrl) {
@@ -1205,7 +1212,7 @@ const generateSingleImageStream = async (
         }
 
         const streamError = error as Error & { didReceiveStreamEvent?: boolean; partialResponse?: GenerateResponse };
-        
+
         // Update the global rate limit cooldown if the stream failed due to rate limits
         updateGlobalRateLimitBackoff(options.model || '', streamError.message || '');
         const partialResponse = buildCompletedBrowserStreamExtraction(streamState, lastChunk);
@@ -1418,12 +1425,10 @@ export const enhancePromptWithGemini = async (
     });
 
     try {
-        const response = await retryOperation(
-            () => getGeminiClient().models.generateContent(requestPayload),
-            2,
-            1500,
-            { backoffMultiplier: 2, maxDelay: 8000 },
-        );
+        const response = await retryOperation(() => getGeminiClient().models.generateContent(requestPayload), 2, 1500, {
+            backoffMultiplier: 2,
+            maxDelay: 8000,
+        });
         const promptText = cleanPromptToolResponseText(response.text, '');
         if (!promptText) {
             throw new Error('Prompt enhancement returned empty text.');
@@ -1484,12 +1489,10 @@ export const generateRandomPrompt = async (
     });
 
     try {
-        const response = await retryOperation(
-            () => getGeminiClient().models.generateContent(requestPayload),
-            2,
-            1500,
-            { backoffMultiplier: 2, maxDelay: 8000 },
-        );
+        const response = await retryOperation(() => getGeminiClient().models.generateContent(requestPayload), 2, 1500, {
+            backoffMultiplier: 2,
+            maxDelay: 8000,
+        });
         const promptText = cleanPromptToolResponseText(response.text, '');
         if (!promptText) {
             throw new Error('Random prompt generation returned empty text.');
@@ -1560,12 +1563,10 @@ export const generatePromptFromImage = async (
     });
 
     try {
-        const response = await retryOperation(
-            () => getGeminiClient().models.generateContent(requestPayload),
-            2,
-            1500,
-            { backoffMultiplier: 2, maxDelay: 8000 },
-        );
+        const response = await retryOperation(() => getGeminiClient().models.generateContent(requestPayload), 2, 1500, {
+            backoffMultiplier: 2,
+            maxDelay: 8000,
+        });
         const promptText = cleanPromptToolResponseText(response.text, '');
         if (!promptText) {
             throw new Error('Image to prompt returned empty text.');
@@ -1744,15 +1745,29 @@ const RATE_LIMIT_PREFIX = 'nano_banana_rate_limit_backoff_until_';
 const globalRateLimitBackoffUntilMap: Record<string, number> = {};
 
 const getModelRateLimitBackoffUntil = (model: string): number => {
+    const maxFutureAllowance = 65000; // 65 seconds max allowance
     try {
         if (typeof localStorage !== 'undefined') {
             const val = localStorage.getItem(RATE_LIMIT_PREFIX + model);
-            return val ? parseInt(val, 10) || 0 : 0;
+            if (val) {
+                const parsed = parseInt(val, 10) || 0;
+                if (parsed > Date.now() + maxFutureAllowance) {
+                    localStorage.removeItem(RATE_LIMIT_PREFIX + model);
+                    delete globalRateLimitBackoffUntilMap[model];
+                    return 0;
+                }
+                return parsed;
+            }
         }
     } catch {
         // ignore
     }
-    return globalRateLimitBackoffUntilMap[model] || 0;
+    const memVal = globalRateLimitBackoffUntilMap[model] || 0;
+    if (memVal > Date.now() + maxFutureAllowance) {
+        delete globalRateLimitBackoffUntilMap[model];
+        return 0;
+    }
+    return memVal;
 };
 
 const setModelRateLimitBackoffUntil = (model: string, until: number) => {
@@ -1838,7 +1853,8 @@ const retryOperation = async <T>(
         // Never retry these deterministic errors
         const msg = error.message || '';
         // 429 and RESOURCE_EXHAUSTED represent transient rate limits/quotas that can be retried.
-        const isDeterministicQuota = msg.includes('quota') && !msg.includes('429') && !msg.includes('RESOURCE_EXHAUSTED');
+        const isDeterministicQuota =
+            msg.includes('quota') && !msg.includes('429') && !msg.includes('RESOURCE_EXHAUSTED');
         if (
             msg.includes('PROMPT_BLOCKED') ||
             msg.includes('SAFETY_BLOCK') ||
@@ -1871,16 +1887,20 @@ const retryOperation = async <T>(
                 // Continuous 429 early exit check: if we consecutive-failed 3 times, abort retries
                 const isPro = model?.toLowerCase().includes('pro');
                 const consecutiveFailLimit = isPro ? 6 : 3;
-                if (isRateLimit && initialRetries !== undefined && (initialRetries - retries) >= consecutiveFailLimit) {
-                    onLog?.(`[API Busy] Gemini API rate limit or quota exceeded after ${consecutiveFailLimit} consecutive attempts. Exiting retries to prevent long lockouts.`);
+                if (isRateLimit && initialRetries !== undefined && initialRetries - retries >= consecutiveFailLimit) {
+                    onLog?.(
+                        `[API Busy] Gemini API rate limit or quota exceeded after ${consecutiveFailLimit} consecutive attempts. Exiting retries to prevent long lockouts.`,
+                    );
                     throw error;
                 }
 
-                const waitMs = isRateLimit 
+                const waitMs = isRateLimit
                     ? Math.max(calculatedWaitMs, (model ? getModelRateLimitBackoffUntil(model) : 0) - Date.now())
                     : calculatedWaitMs;
 
-                onLog?.(`[API Busy] Gemini API is temporarily busy. Retrying automatically in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`);
+                onLog?.(
+                    `[API Busy] Gemini API is temporarily busy. Retrying automatically in ${(waitMs / 1000).toFixed(1)}s... (${retries} left)`,
+                );
                 emitGenerationDebugEvent({
                     kind: 'retry',
                     label: 'Retry scheduled',
@@ -1911,9 +1931,7 @@ const retryOperation = async <T>(
                     }
                 });
                 // Relax max delay to 60s for 429/RESOURCE_EXHAUSTED quota limits
-                const effectiveMaxDelay = isRateLimit
-                    ? Math.max(maxDelay, 60000)
-                    : maxDelay;
+                const effectiveMaxDelay = isRateLimit ? Math.max(maxDelay, 60000) : maxDelay;
                 const nextDelay = Math.min(waitMs * backoffMultiplier, effectiveMaxDelay);
                 return retryOperation(operation, retries - 1, nextDelay, opts);
             }
@@ -2080,7 +2098,7 @@ export const generateImageWithGemini = async (
 
         if (shouldAttemptImageAbsenceRecovery(initialResult)) {
             onLog?.(`Image #${index + 1}: No final image returned. Scheduling one recovery attempt.`);
-            
+
             // Wait a stagger delay before running the recovery attempt (skip in unit tests)
             if (!isUnitTest) {
                 try {

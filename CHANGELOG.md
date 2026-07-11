@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.9.2 - 2026-07-11
+
+- **API Rate Limit Self-Healing**:
+    - Implemented self-healing validation for model rate limit backoffs in `geminiService.ts`. Corrupt or invalid far-future rate limit timestamps (e.g. from date parsing offsets) are automatically cleared from `localStorage` and memory to prevent permanent client lockout.
+- **Client-Side Keep-Alive Heartbeat**:
+    - Added a periodic HTTP HEAD keep-alive ping to `/favicon.ico` every 30 seconds inside the lifecycle hook (`useWorkspaceAppLifecycle.ts`) to maintain active connection traffic and prevent the Google Cloud Run sandbox container from suspending/scaling to zero.
+
 ## v1.9.1 - 2026-07-11
 
 - **Auto-Ratio Locking Fix**:

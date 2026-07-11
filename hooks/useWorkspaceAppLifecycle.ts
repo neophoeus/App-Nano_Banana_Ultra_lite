@@ -114,6 +114,7 @@ export function useWorkspaceAppLifecycle({
             }
 
             // Start a periodic background Heartbeat check (every 10 seconds) to ensure automatic recovery/updating of the connection status after long usage, tab inactivity, or iframe reconnection
+            let heartbeatCount = 0;
             heartbeatInterval = setInterval(async () => {
                 if (cancelled) {
                     clearInterval(heartbeatInterval);
@@ -125,6 +126,15 @@ export function useWorkspaceAppLifecycle({
                     return;
                 }
                 setApiKeyReady((prev) => (prev !== ready ? ready : prev));
+
+                // Perform active HTTP Keep-Alive ping to the backend container every 30 seconds (every 3 ticks)
+                // to generate artificial traffic and prevent Cloud Run scale-to-zero / container suspension.
+                heartbeatCount++;
+                if (heartbeatCount % 3 === 0) {
+                    fetch('/favicon.ico', { method: 'HEAD', cache: 'no-store' }).catch(() => {
+                        // ignore network errors if offline/suspending
+                    });
+                }
             }, 10000);
         };
 
