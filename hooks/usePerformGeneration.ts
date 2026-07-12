@@ -314,7 +314,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
             setSelectedImageIndex(0);
             setLogs([]);
             onLiveProgressReset?.();
-            
+
             const batchSessionId = crypto.randomUUID();
             const completedSessionIds = new Set<string>();
             let activeBatchSessionId = batchSessionId;
@@ -384,8 +384,48 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                 imageSearch,
             });
 
-            try {
+            const checkAndTriggerAutoBackup = () => {
+                if (autoExportTrigger === 'off') return;
 
+                const countSinceExport = Number(localStorage.getItem('nbu_successCountSinceExport') || '0');
+                const sizeGrowthBytes = Number(localStorage.getItem('nbu_sizeGrowthSinceExport') || '0');
+                const sizeGrowthMb = sizeGrowthBytes / (1024 * 1024);
+
+                const countThreshold = autoExportImageCount || 50;
+                const sizeThresholdMb = autoExportFileSizeMb || 50;
+
+                let shouldExport = false;
+                if (autoExportTrigger === 'count' && countSinceExport >= countThreshold) {
+                    shouldExport = true;
+                } else if (autoExportTrigger === 'size' && sizeGrowthMb >= sizeThresholdMb) {
+                    shouldExport = true;
+                } else if (
+                    autoExportTrigger === 'both' &&
+                    (countSinceExport >= countThreshold || sizeGrowthMb >= sizeThresholdMb)
+                ) {
+                    shouldExport = true;
+                }
+
+                if (shouldExport) {
+                    localStorage.setItem('nbu_successCountSinceExport', '0');
+                    localStorage.setItem('nbu_sizeGrowthSinceExport', '0');
+
+                    const notificationMsg = t('autoExportNotificationText')
+                        .replace('{0}', String(countSinceExport))
+                        .replace('{1}', sizeGrowthMb.toFixed(1));
+                    showNotification(notificationMsg, 'info', 8000);
+
+                    if (handleExportWorkspaceSnapshot) {
+                        setTimeout(() => {
+                            handleExportWorkspaceSnapshot().catch((err) => {
+                                console.error('Auto-export failed', err);
+                            });
+                        }, 500);
+                    }
+                }
+            };
+
+            try {
                 for (let currentRound = 1; currentRound <= totalRounds; currentRound++) {
                     if (controller.signal.aborted) {
                         break;
@@ -405,11 +445,16 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
 
                     addLog(t('logMode').replace('{0}', currentMode));
                     addLog(t('logSource').replace('{0}', getModelLabel(t, targetModel)));
-                    addLog(t('logRequesting').replace('{0}', currentBatchSize.toString()).replace('{1}', currentImageSize));
+                    addLog(
+                        t('logRequesting').replace('{0}', currentBatchSize.toString()).replace('{1}', currentImageSize),
+                    );
                     const requestCreatedAt = new Date();
                     const requestId = crypto.randomUUID();
 
-                    const handleImageReceived = async (url: string, slotIndex: number): Promise<ImageReceivedResult> => {
+                    const handleImageReceived = async (
+                        url: string,
+                        slotIndex: number,
+                    ): Promise<ImageReceivedResult> => {
                         if (controller.signal.aborted) {
                             throw new Error('ABORTED');
                         }
@@ -531,7 +576,10 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                                     setHistory((prev: GeneratedImageType[]) =>
                                         prev.map((prevItem) =>
                                             prevItem.id === item.id
-                                                ? { ...prevItem, failureContext: { hasSiblingSafetyBlockedFailure: true } }
+                                                ? {
+                                                      ...prevItem,
+                                                      failureContext: { hasSiblingSafetyBlockedFailure: true },
+                                                  }
                                                 : prevItem,
                                         ),
                                     );
@@ -576,15 +624,21 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                             primaryOutputSavedFilename: res.savedFilename,
                         });
                         if (res.status === 'success' && res.url) {
-                            const persistedThumbnail = await persistHistoryThumbnail(res.url, prefix, res.savedFilename);
+                            const persistedThumbnail = await persistHistoryThumbnail(
+                                res.url,
+                                prefix,
+                                res.savedFilename,
+                            );
                             thumbnailUrl = persistedThumbnail.url;
                             thumbnailSavedFilename = persistedThumbnail.thumbnailSavedFilename;
                             thumbnailInline = persistedThumbnail.thumbnailInline;
 
                             // Calculate size and success count
                             const imageSizeBytes = res.url.length * 0.75;
-                            const currentSuccessCount = Number(localStorage.getItem('nbu_successCountSinceExport') || '0') + 1;
-                            const currentSizeGrowth = Number(localStorage.getItem('nbu_sizeGrowthSinceExport') || '0') + imageSizeBytes;
+                            const currentSuccessCount =
+                                Number(localStorage.getItem('nbu_successCountSinceExport') || '0') + 1;
+                            const currentSizeGrowth =
+                                Number(localStorage.getItem('nbu_sizeGrowthSinceExport') || '0') + imageSizeBytes;
                             localStorage.setItem('nbu_successCountSinceExport', String(currentSuccessCount));
                             localStorage.setItem('nbu_sizeGrowthSinceExport', String(currentSizeGrowth));
                         }
@@ -735,44 +789,12 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                     }
 
                     addLog(
-                        t('logSuccessFail').replace('{0}', successCount.toString()).replace('{1}', failCount.toString()),
+                        t('logSuccessFail')
+                            .replace('{0}', successCount.toString())
+                            .replace('{1}', failCount.toString()),
                     );
-                }
 
-                if (autoExportTrigger !== 'off') {
-                    const countSinceExport = Number(localStorage.getItem('nbu_successCountSinceExport') || '0');
-                    const sizeGrowthBytes = Number(localStorage.getItem('nbu_sizeGrowthSinceExport') || '0');
-                    const sizeGrowthMb = sizeGrowthBytes / (1024 * 1024);
-
-                    const countThreshold = autoExportImageCount || 50;
-                    const sizeThresholdMb = autoExportFileSizeMb || 50;
-
-                    let shouldExport = false;
-                    if (autoExportTrigger === 'count' && countSinceExport >= countThreshold) {
-                        shouldExport = true;
-                    } else if (autoExportTrigger === 'size' && sizeGrowthMb >= sizeThresholdMb) {
-                        shouldExport = true;
-                    } else if (autoExportTrigger === 'both' && (countSinceExport >= countThreshold || sizeGrowthMb >= sizeThresholdMb)) {
-                        shouldExport = true;
-                    }
-
-                    if (shouldExport) {
-                        localStorage.setItem('nbu_successCountSinceExport', '0');
-                        localStorage.setItem('nbu_sizeGrowthSinceExport', '0');
-
-                        const notificationMsg = t('autoExportNotificationText')
-                            .replace('{0}', String(countSinceExport))
-                            .replace('{1}', sizeGrowthMb.toFixed(1));
-                        showNotification(notificationMsg, 'info', 8000);
-
-                        if (handleExportWorkspaceSnapshot) {
-                            setTimeout(() => {
-                                handleExportWorkspaceSnapshot().catch((err) => {
-                                    console.error('Auto-export failed', err);
-                                });
-                            }, 500);
-                        }
-                    }
+                    checkAndTriggerAutoBackup();
                 }
             } catch (err: any) {
                 console.error(err);
@@ -799,6 +821,7 @@ export function usePerformGeneration(options: UsePerformGenerationProps) {
                     showNotification(t('statusFailed'), 'error');
                 }
             } finally {
+                checkAndTriggerAutoBackup();
                 if (!completedSessionIds.has(activeBatchSessionId)) {
                     onBatchPreviewClear?.({ sessionId: activeBatchSessionId });
                 }

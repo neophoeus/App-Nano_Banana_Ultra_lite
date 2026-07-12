@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.3 - 2026-07-12
+
+- **Progressive Auto-Backup Optimization**:
+    - Relocated the auto-export check to run progressively at the end of each generation round/batch rather than only after all rounds complete.
+    - Integrated backup checks in the `finally` block to prevent loss of progress if the generation process fails, throws an error, or is cancelled mid-way.
+
 ## v1.9.2 - 2026-07-11
 
 - **API Rate Limit Self-Healing**:
