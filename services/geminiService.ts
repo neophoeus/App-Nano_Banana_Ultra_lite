@@ -1407,7 +1407,7 @@ export const enhancePromptWithGemini = async (
     const requestId = createDebugRequestId();
     const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
-        model: 'gemini-3.5-flash',
+        model: 'gemini-3.6-flash',
         config: {
             systemInstruction: buildPromptEnhancerInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
@@ -1471,7 +1471,7 @@ export const generateRandomPrompt = async (
     const requestId = createDebugRequestId();
     const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
-        model: 'gemini-3.5-flash',
+        model: 'gemini-3.6-flash',
         config: {
             systemInstruction: buildRandomPromptInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),
@@ -1540,7 +1540,7 @@ export const generatePromptFromImage = async (
     const requestId = createDebugRequestId();
     const resolvedSafetySettings = buildSafetySettings(safetyThresholds ?? DEFAULT_SAFETY_THRESHOLDS);
     const requestPayload = {
-        model: 'gemini-3.5-flash',
+        model: 'gemini-3.6-flash',
         config: {
             systemInstruction: buildImageToPromptInstruction(normalizedLanguage),
             ...(resolvedSafetySettings ? { safetySettings: resolvedSafetySettings } : {}),

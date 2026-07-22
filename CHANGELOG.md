@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.10.0 - 2026-07-22
+
+- **Gemini 3.6 Flash Text Model Upgrade**:
+    - Upgraded text LLM services (`enhancePrompt`, `generateRandomPrompt`, `generatePromptFromImage`, and `identifyBlockKeywords`) to Google's latest `gemini-3.6-flash` model.
+
 ## v1.9.3 - 2026-07-12
 
 - **Progressive Auto-Backup Optimization**:
